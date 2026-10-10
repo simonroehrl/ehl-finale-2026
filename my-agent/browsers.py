@@ -7,6 +7,7 @@ starts itself. On your own machine there is no CDP_URLS, so `connect` starts a l
 """
 import json
 import os
+from urllib.request import urlopen
 
 
 def cdp_urls(env=os.environ) -> list[str]:
@@ -16,6 +17,38 @@ def cdp_urls(env=os.environ) -> list[str]:
     except ValueError:
         urls = []
     return urls or ([env["CDP_URL"]] if env.get("CDP_URL") else [])
+
+
+LOCAL_CDP_BASE_PORT = 9301
+SANDBOX_SCREEN = "1280,800"  # the sandbox desktop; locally the same, so pages lay out alike
+
+
+def check_cdp(url: str) -> str:
+    """The browser behind a CDP URL (e.g. "Chrome/141.0..."). Fails fast, before any agent starts."""
+    try:
+        with urlopen(url.rstrip("/") + "/json/version", timeout=10) as response:
+            return json.load(response).get("Browser", "unknown")
+    except (OSError, ValueError) as error:
+        raise SystemExit(f"No browser answers at {url}: {error}")
+
+
+async def cdp_endpoints(playwright, count: int = 1) -> tuple[list[str], list]:
+    """CDP URLs for `count` browsers, for tools that attach on their own (Playwright MCP). In a run, the sandbox's;
+    locally, Chromiums started here with a debugging port. Returns the URLs and the local browsers to close."""
+    urls, launched = cdp_urls(), []
+    if urls:
+        if len(urls) < count:
+            raise SystemExit(f"{count} browsers needed, the sandbox has {len(urls)}: set \"browsers\" in agent.json")
+        urls, where = urls[:count], "sandbox"
+    else:
+        for n in range(count):
+            launched.append(await playwright.chromium.launch(
+                headless=os.environ.get("HEADLESS") == "1",
+                args=[f"--remote-debugging-port={LOCAL_CDP_BASE_PORT + n}", f"--window-size={SANDBOX_SCREEN}"]))
+        urls, where = [f"http://127.0.0.1:{LOCAL_CDP_BASE_PORT + n}" for n in range(count)], "local"
+    for n, url in enumerate(urls, 1):
+        print(f"Browser {n} ({where}): {check_cdp(url)} at {url}", flush=True)
+    return urls, launched
 
 
 async def connect(playwright, number: int = 0):

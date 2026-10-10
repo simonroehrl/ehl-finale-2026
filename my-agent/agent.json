@@ -1,5 +1,6 @@
 {
-  "setup": ["uv", "sync"],
+  "setup": ["sh", "-c", "uv sync && npm ci --no-fund --no-audit"],
   "run": ["uv", "run", "--no-sync", "python", "agent.py"],
-  "models": ["qwen"]
+  "models": ["qwen"],
+  "browsers": 4
 }
