@@ -355,3 +355,7 @@ So but we cant optimize for it right because the submission form could be differ
 ---
 
 The run was succesful and 100% score
+
+---
+
+So are those answers fixed and we can run just locally to produce those answers again
