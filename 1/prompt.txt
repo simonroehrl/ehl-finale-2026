@@ -1,0 +1,61 @@
+What is .t3 thread id e51796e8-783f-40b8-8610-30fde36b832e struggling with? The 20 minute timeout?
+
+---
+
+Whats the problem here? The json contract for the python script? Or the browser steering? Or is qwen to dumb
+
+---
+
+Why should I ever use the qwen because speed and spend matters why not use some model from openrouter
+
+---
+
+So would my claude oauth key also work
+
+---
+
+Can you try it though
+
+---
+
+Its no problem that it counts as if it would be API would it be possible to use my subscription and it counts against my subscription usage but atira sees it like it would api spend
+
+---
+
+So why do I have a custom harness at all? So my harness steers cdp right why not have claude code what are the different options here
+
+---
+
+What is the advantage of my own harness instead of using claude code
+
+---
+
+The agent sdk is a layer above claude code right?
+
+---
+
+Would it make sense to make a small experiement with claude code if thats better and faster?
+
+---
+
+I mean at the end we need to optimize for speed and cost whats the best thing here a custom harness or like opencode with a model
+
+---
+
+So how does the harness currently work? Just a python script that repeatetly calls an API
+
+---
+
+Could we use recursive agents like one orchestration agent instead of that hardcoded harness
+
+---
+
+But isnt that what claude code already does?
+
+---
+
+No I mean what we want is the agents produce one json file thats handed to the pricing.py. this json must be really sophisticated to cover all the potential cases. Then its just retrieval to structured json and then deterministic calculation from that json and then one output the bid that one bidding agent receives to produce the bid. So retrieval with one coding agent that produces the json (we assume its always fast enough to be in the 20 min limit) then the json to deterministic code which is like ms of processing and then the submission. the idea is that the agents dont decide everything themselves but the actual hardcore calculation and decisions are done in python
+
+---
+
+yes please
