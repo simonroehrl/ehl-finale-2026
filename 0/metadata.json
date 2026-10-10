@@ -1,0 +1,158 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KBA7ZB5JSKY8BDXK9SQDXB",
+  "session_id": "38c06511-1e16-41c4-a1ad-ee59930af2d1",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T16:46:07.213978Z",
+  "branch": "main",
+  "checkpoints_count": 25,
+  "save_step_count": 2,
+  "files_touched": [
+    "bid_engine/__pycache__/evidence.cpython-314.pyc",
+    "bid_engine/__pycache__/resolver.cpython-314.pyc",
+    "bid_engine/tests/__pycache__/test_resolver.cpython-314.pyc",
+    "bid_engine/tests/test_resolver.py",
+    "cc-agent/main.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "6dbde8bc03a4",
+  "checkpoint_transcript_start": 1480,
+  "transcript_lines_at_start": 1480,
+  "compact_transcript_start": 269,
+  "token_usage": {
+    "input_tokens": 202,
+    "cache_creation_tokens": 145953,
+    "cache_read_tokens": 41543499,
+    "output_tokens": 71173,
+    "api_call_count": 106
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "prompt-skill-claude-code-goal-2026-10-10T12:05:00.970134Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "goal"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "8bed33e935ff",
+      "timestamp": "2026-10-10T12:05:00.970134Z",
+      "native": {
+        "command": "/goal"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/goal",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 52
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T16:46:07.103546Z",
+    "agent_lines": 252,
+    "agent_removed": 0,
+    "human_added": 8753,
+    "human_modified": 42,
+    "human_removed": 0,
+    "total_committed": 9026,
+    "total_lines_changed": 9047,
+    "agent_percentage": 2.785453741571792,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 738,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "bid_engine/evidence.py": 280,
+        "bid_engine/resolver.py": 458
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 4454,
+      "user_lines_removed": 0,
+      "agent_lines_added": 1073,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "benchmark/.gitignore": 1,
+        "benchmark/README.md": 14,
+        "benchmark/pipeline.py": 230,
+        "cc-agent/.gitignore": 7,
+        "cc-agent/agent.json": 6,
+        "cc-agent/browsers.py": 64,
+        "cc-agent/evidence.py": 282,
+        "cc-agent/main.py": 259,
+        "cc-agent/package-lock.json": 196,
+        "cc-agent/package.json": 9,
+        "cc-agent/pricing.py": 246,
+        "cc-agent/pyproject.toml": 13,
+        "cc-agent/resolver.py": 458,
+        "cc-agent/run.py": 81,
+        "cc-agent/tests/test_pricing.py": 100,
+        "cc-agent/tests/test_resolver.py": 333,
+        "cc-agent/uv.lock": 267,
+        "rlm-agent/.gitignore": 7,
+        "rlm-agent/analyst.py": 131,
+        "rlm-agent/browsers.py": 64,
+        "rlm-agent/llm_agent.py": 286,
+        "rlm-agent/pricing.py": 246,
+        "rlm-agent/prompts/submit.md": 32,
+        "rlm-agent/prompts/system.md": 18,
+        "rlm-agent/pyproject.toml": 15,
+        "rlm-agent/run.py": 81,
+        "rlm-agent/uv.lock": 1008
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 4268,
+      "user_lines_removed": 21,
+      "agent_lines_added": 1345,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "benchmark/.gitignore": 1,
+        "benchmark/README.md": 14,
+        "benchmark/pipeline.py": 230,
+        "cc-agent/.gitignore": 7,
+        "cc-agent/agent.json": 6,
+        "cc-agent/browsers.py": 64,
+        "cc-agent/evidence.py": 282,
+        "cc-agent/main.py": 73,
+        "cc-agent/package-lock.json": 196,
+        "cc-agent/package.json": 9,
+        "cc-agent/pricing.py": 246,
+        "cc-agent/pyproject.toml": 13,
+        "cc-agent/resolver.py": 458,
+        "cc-agent/run.py": 81,
+        "cc-agent/tests/test_pricing.py": 100,
+        "cc-agent/tests/test_resolver.py": 333,
+        "cc-agent/uv.lock": 267,
+        "rlm-agent/.gitignore": 7,
+        "rlm-agent/analyst.py": 131,
+        "rlm-agent/browsers.py": 64,
+        "rlm-agent/llm_agent.py": 286,
+        "rlm-agent/pricing.py": 246,
+        "rlm-agent/prompts/submit.md": 32,
+        "rlm-agent/prompts/system.md": 18,
+        "rlm-agent/pyproject.toml": 15,
+        "rlm-agent/run.py": 81,
+        "rlm-agent/uv.lock": 1008
+      },
+      "user_removed_per_file": {
+        "cc-agent/main.py": 21
+      }
+    }
+  ]
+}
