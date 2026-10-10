@@ -1,0 +1,1 @@
+No i mean like we have 100% so we know and can run locally to achieve that 100% with another approach no need for a cloud run anymore
