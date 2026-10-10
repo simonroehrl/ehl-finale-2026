@@ -7,3 +7,7 @@ so is the reference pushed right now?
 ---
 
 Why not push the public answers.json?
+
+---
+
+yes just push
