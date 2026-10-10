@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4K1RNXEM3JR2X5BPZFQ3SR3",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 27,
+  "files_touched": [
+    "my-agent/.gitignore",
+    "my-agent/agent.json",
+    "my-agent/agent.py",
+    "my-agent/browsers.py",
+    "my-agent/pyproject.toml",
+    "my-agent/tests/test_kit.py",
+    "my-agent/tests/test_pricing.py",
+    "my-agent/uv.lock"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 412,
+    "cache_creation_tokens": 346490,
+    "cache_read_tokens": 40060652,
+    "output_tokens": 156817,
+    "api_call_count": 206
+  }
+}
