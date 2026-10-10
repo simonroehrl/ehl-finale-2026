@@ -10,6 +10,7 @@ Docs: $API/docs/building-an-agent.md, $API/docs/run-contract.md, and the rules: 
 """
 import asyncio
 import json
+import os
 import re
 import sys
 import tempfile
@@ -23,6 +24,7 @@ import analyst
 import browsers
 import run as contract
 from llm_agent import Agent
+from orchestration.runtime import research_orchestrated
 
 PROMPTS = Path(__file__).resolve().parent / "prompts"
 BROWSERS = ["tender", "spec", "erp", "mail"]           # browser n works on one website
@@ -140,7 +142,9 @@ async def solve(task: dict, cdp_urls: list[str]) -> dict | None:
     workdir = Path(tempfile.mkdtemp(prefix="rfq-run-"))
     print(f"Workdir {workdir}; {end - start:.0f}s on the clock", flush=True)
 
-    facts = await research(task, urls, workdir, deadline=end - SUBMIT_S - ANALYST_S)
+    # ORCHESTRATION=1: the event-driven orchestration (orchestration/) instead of the fixed research() flow
+    researcher = research_orchestrated if os.environ.get("ORCHESTRATION") == "1" else research
+    facts = await researcher(task, urls, workdir, deadline=end - SUBMIT_S - ANALYST_S)
     (workdir / "facts.json").write_text(json.dumps(facts, ensure_ascii=False, indent=2))
     print(f"Research done at {time.monotonic() - start:.0f}s", flush=True)
 

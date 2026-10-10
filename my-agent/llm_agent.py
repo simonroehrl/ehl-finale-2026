@@ -82,6 +82,7 @@ class Agent:
         self.client = qwen_client()
         self.facts = None
         self.finished = None
+        self.on_facts = None          # optional callback(facts) after every save_facts (the orchestration listens)
         self.required: list[str] = []
         self.usage = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0}
         self._stack = AsyncExitStack()
@@ -119,6 +120,7 @@ class Agent:
         `required`: top-level keys the saved facts must have; the model is reminded of missing ones and cannot
         finish without them (unless time runs out)."""
         self.required = required or []
+        self.finished, self.facts = None, None  # a new task on the same session (the orchestration reuses agents)
         messages = [{"role": "system", "content": system}, {"role": "user", "content": task}]
         started, nudged = time.monotonic(), False
         for turn in range(max_turns):
@@ -178,6 +180,11 @@ class Agent:
         if name == "save_facts":
             self.facts = args.get("facts", args)
             self.facts_path.write_text(json.dumps(self.facts, ensure_ascii=False, indent=2))
+            if self.on_facts:
+                try:
+                    self.on_facts(self.facts)
+                except Exception as error:  # noqa: BLE001  a listener's problem must not stop the model
+                    self._print(f"on_facts failed: {error!r}")
             missing = missing_keys(self.facts, self.required)
             return "Saved." + (f" Still missing: {', '.join(missing)}." if missing else (
                 " Everything required is there: finish now, unless a value you know exists is still unread."))
