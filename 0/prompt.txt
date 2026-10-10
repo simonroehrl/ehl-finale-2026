@@ -1,0 +1,11 @@
+is it required to setup entire?
+
+---
+
+What do I need to set this up
+
+https://ehl-challenge.atira.ai/llms.txt
+
+---
+
+Please commit and push
