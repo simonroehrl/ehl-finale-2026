@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01XsQ1Mv9XShMcNSPodk7f39",
+  "agent_id": "a9a765de37ace829a",
+  "subagent_type": "general-purpose",
+  "task_description": "Web/academic research on web agents",
+  "token_usage": {
+    "input_tokens": 22,
+    "cache_creation_tokens": 64046,
+    "cache_read_tokens": 394434,
+    "output_tokens": 5108,
+    "api_call_count": 11
+  },
+  "started_at": "2026-10-11T03:42:45.248593+02:00",
+  "completed_at": "2026-10-11T03:45:50.116289+02:00"
+}
