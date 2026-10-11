@@ -1,0 +1,6 @@
+web/node_modules/
+web/dist/
+__pycache__/
+.venv/
+*.pyc
+data/live-out/
