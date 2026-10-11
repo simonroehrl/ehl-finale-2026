@@ -1,0 +1,13 @@
+[project]
+name = "optimized-solution"
+version = "0.1.0"
+description = "Ledger-driven tender agent: model-chosen navigation, deterministic bid rules"
+requires-python = ">=3.12"
+dependencies = [
+    "openai==2.54.0",
+    "playwright==1.63.0",
+    "pypdf==6.20.0",
+]
+
+[tool.uv]
+package = false

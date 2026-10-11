@@ -1,0 +1,70 @@
+{
+  "positions": [
+    {
+      "position": "1",                     // string or number: Position / Line ID
+      "withdrawn": false,                  // boolean: True if Q&A entry was withdrawn (Rule 13)
+      "omitted": false,                    // boolean: True if position should be skipped (Rule 03)
+      "quantity": 100,                     // number: Stated quantity (supports 'quantity_pieces' or 'qty')
+      "unit": "pieces",                    // string: "pieces", "Satz", or "set" (Rule 17)
+      "pieces_per_set": 1,                 // number: Multiplier if unit is 'Satz' / 'set' (Rule 17)
+      "material": "MAT-12345",             // string: Material ID / Article number (supports 'material_id', 'article_number')
+      
+      // Price Scales / Tiers (Rule 04)
+      "price_condition": {
+        "fx_rate_to_eur": 1.0,             // number: FX multiplier to Euros
+        "scales": [
+          { "min_quantity": 1, "price": 50.00 },
+          { "min_quantity": 100, "price": 45.00 }
+        ]
+      },
+
+      // Surcharges & Commercial Scoping (Rule 12)
+      "surcharge_per_unit": 2.00,          // number: Surcharge fee per piece
+      "discount_scope": "base_only",       // string: "base_only", "base_plus_surcharge", or "neither"
+      
+      // Packaging & Carton Rounding (Rule 23)
+      "carton_size": 25,                   // number: Units per carton (0 or missing if bulk)
+      "packaging_tariff_per_carton": 5.00, // number: Cost per carton
+      "packaging_per_unit": 0.00,          // number: Fallback direct packaging cost per piece
+      
+      // Setup Fees & Mass Allocation (Rule 25)
+      "ordinary_setup": 150.00,            // number: Fixed setup fee for this position
+      "allocation_mass": 2.5,              // number: Mass weight used for shared pool allocation ratio
+
+      // Technical Stroke Derivation (Rule 20: nutzbarer Weg)
+      "is_nutzbarer_weg": false,           // boolean: True if requirement uses stroke derivation
+      "base_stroke": 100.0,                // number: Nominal base stroke
+      "per_end_reserve": 5.0,              // number: Per-end reserve from Technikfreigabe
+
+      // Stock Lead Times (Rule 15, 24)
+      "stock_lead_time": "from_stock",     // string: Label if satisfied by stock
+      "production_lead_time": "production", // string: Label if triggered to production
+      "delivery_commitment": {
+        "ceiling": 500                     // number: Inclusive ceiling limit for delivery commitment
+      }
+    }
+  ],
+
+  // Director Approval / Conditional Discount (Rule 05, 16)
+  "director_approval": {
+    "percent": 5.0,                        // number: Discount percentage (e.g., 5.0 for 5%)
+    "is_conditional": true,                // boolean: True if a minimum order threshold applies
+    "min_order_value": 10000.00            // number: Minimum undiscounted total required to unlock discount
+  },
+
+  // Material Stock Levels (Rule 15)
+  "material_stock_levels": {
+    "MAT-12345": 1000                      // object mapping material ID to available warehouse stock quantity
+  },
+
+  // Shared Pool Fee / Setup Data (Rule 25)
+  "shared_pool_fee_data": {
+    "pool_fee": 1200.00                    // number: Total shared pool setup fee to be distributed by mass weight
+  },
+
+  // Project Bonus Marginal Bands (Rule 26)
+  "project_bonus_bands": [
+    { "limit": 50000.0, "percent": 2.0 },  // number: Tier limit and bonus percentage chunk
+    { "limit": 100000.0, "percent": 3.5 }
+  ]
+}

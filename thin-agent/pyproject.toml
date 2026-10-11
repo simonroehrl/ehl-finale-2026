@@ -1,0 +1,14 @@
+[project]
+name = "atira-rfq-thin"
+version = "0.1.0"
+description = "Model picks the next control; code reads the opened page and prices the bid"
+requires-python = ">=3.12"
+dependencies = [
+    "openai==2.54.0",
+    "playwright==1.63.0",
+    "pydantic==2.14.0",
+    "pypdf==6.20.0",
+]
+
+[tool.uv]
+package = false

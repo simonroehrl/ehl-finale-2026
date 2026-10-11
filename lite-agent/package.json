@@ -1,0 +1,8 @@
+{
+  "name": "atira-rfq-agent",
+  "private": true,
+  "description": "Playwright MCP: the browser tools the Python agents drive over CDP",
+  "dependencies": {
+    "@playwright/mcp": "0.0.83"
+  }
+}

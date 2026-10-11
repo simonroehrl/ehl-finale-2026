@@ -16,21 +16,25 @@ import tempfile
 import time
 from decimal import Decimal
 from pathlib import Path
+from urllib.parse import urlparse
 
 from playwright.async_api import async_playwright
 
 import analyst
 import browsers
+import pricing
 import run as contract
 from llm_agent import Agent
+from match import catalog_groups
 
 PROMPTS = Path(__file__).resolve().parent / "prompts"
 BROWSERS = ["tender", "spec", "erp", "mail"]           # browser n works on one website
 SITE_IDS = {"tender": "tender-portal", "spec": "customer-portal", "erp": "erp", "mail": "mail"}
 REQUIRED = {"tender": ["tender", "positions", "clarifications"], "spec": ["revisions", "requirements"],
-            "mail": ["mails"], "erp": ["materials"], "submit": ["confirmation"]}
-ANALYST_S = 120             # the analyst's longest wait
-SUBMIT_S = 570              # the submit agent: the form, the TAN mail, signing
+            "mail": ["mails"], "erp": ["materials", "catalog_groups"], "submit": ["confirmation"]}
+ANALYST_S = 30              # compact facts only; code already has the order
+SUBMIT_S = 240              # form + TAN + sign; keep this reserved even if research is slow
+SITE_TURNS = {"tender": 24, "spec": 24, "erp": 28, "mail": 18}
 SAFETY_S = 60                # an answer after expires_at scores 0
 
 
@@ -73,46 +77,81 @@ def bid_text(answer: dict) -> str:
                      f"{german(p['surcharge_per_unit'])}, packaging per unit {german(p['packaging_per_unit'])}, "
                      f"rebate total {german(p['rebate_total'])}")
     lines.append(f"Total net: {german(answer['total_net'])} EUR")
+    omitted = answer.get("omitted_positions") or []
+    if omitted:
+        lines.append("Omit these unfinished positions on the form (do not fill them): " + ", ".join(omitted))
     return "\n".join(lines)
 
 
+def site_host(task: dict, name: str) -> str:
+    return (urlparse(site(task, SITE_IDS[name])["url"]).hostname or "").lower()
+
+
 async def research(task: dict, urls: dict, workdir: Path, deadline: float) -> dict:
-    """Tender, specification and mailbox in parallel; the ERP as soon as the specification agent has saved the
-    requirements with their catalogue groups. Each site gets its own share of the clock."""
+    """Tender, specification and mailbox in parallel; the ERP as soon as the specification names catalogue groups.
+    Analysis starts when tender, specification and ERP are done — mail is not allowed to hold the clock."""
     system = (PROMPTS / "system.md").read_text()
     agents: dict[str, Agent] = {}
     start = time.monotonic()
 
-    async def run_site(name: str, prompt: str, until: float) -> dict:
+    async def run_site(name: str, prompt: str, until: float, must_search: list[str] | None = None,
+                       more_groups=None) -> dict:
+        host = site_host(task, name)
         try:
-            async with Agent(name, {name: urls[name]}, workdir) as agent:
+            async with Agent(name, {name: urls[name]}, workdir, must_search=must_search,
+                             more_groups=more_groups, home_hosts={name: host},
+                             auto_drain=True) as agent:
                 agents[name] = agent
-                return await agent.run(system, prompt, min(until, deadline), required=REQUIRED[name])
+                return await agent.run(system, prompt, min(until, deadline),
+                                       max_turns=SITE_TURNS.get(name, 24),
+                                       required=REQUIRED[name])
+        except asyncio.CancelledError:
+            return {"name": name, "facts": agents[name].facts if name in agents else None, "summary": "stopped"}
         except Exception as error:  # noqa: BLE001  one site failing must not stop the others
             print(f"[{name}] failed: {error!r}", flush=True)
             return {"name": name, "facts": agents[name].facts if name in agents else None, "error": repr(error)}
 
-    share = deadline - start
-    tender = asyncio.create_task(run_site("tender", site_task("tender", task), start + 0.6 * share))
-    spec = asyncio.create_task(run_site("spec", site_task("spec", task), start + 0.5 * share))
-    mail = asyncio.create_task(run_site("mail", site_task("mail", task), start + 0.75 * share))
+    tender = asyncio.create_task(run_site("tender", site_task("tender", task), deadline))
+    spec = asyncio.create_task(run_site("spec", site_task("spec", task), deadline))
+    mail = asyncio.create_task(run_site("mail", site_task("mail", task), deadline))
 
     def facts_of(name: str):
         return agents[name].facts if name in agents else None
 
     async def erp_when_requirements_known():
-        while not spec.done() and time.monotonic() < deadline - 0.4 * share:
+        while not spec.done() and time.monotonic() < deadline - 90:
             f = facts_of("spec")
-            if isinstance(f, dict) and f.get("requirements") and "atalog" in json.dumps(f, ensure_ascii=False):
+            blob = json.dumps(f, ensure_ascii=False) if isinstance(f, dict) else ""
+            if isinstance(f, dict) and f.get("requirements") and "atalog" in blob:
                 break
             await asyncio.sleep(5)
         print(f"[erp] starting at {time.monotonic() - start:.0f}s", flush=True)
-        requirements = {"specification": facts_of("spec"), "tender": facts_of("tender")}
+        spec_facts = facts_of("spec")
+        requirements = {"specification": spec_facts, "tender": facts_of("tender")}
         return await run_site("erp", site_task("erp", task, REQUIREMENTS=json.dumps(requirements, ensure_ascii=False)),
-                              deadline)
+                              deadline, must_search=catalog_groups(spec_facts),
+                              more_groups=lambda: catalog_groups(facts_of("spec")))
+
+    async def take_mail():
+        if mail.done():
+            return mail.result()
+        grace = time.monotonic() + 30
+        while not mail.done() and time.monotonic() < grace:
+            saved = facts_of("mail")
+            if isinstance(saved, dict) and saved.get("mails"):
+                break
+            await asyncio.sleep(2)
+        if mail.done():
+            return mail.result()
+        mail.cancel()
+        try:
+            return await mail
+        except asyncio.CancelledError:
+            return {"name": "mail", "facts": facts_of("mail"), "summary": "stopped after other sites finished"}
 
     erp = asyncio.create_task(erp_when_requirements_known())
-    reports = await asyncio.gather(tender, spec, mail, erp)
+    core = await asyncio.gather(tender, spec, erp)
+    reports = [*core, await take_mail()]
     for r in reports:
         print(f"[{r['name']}] {r.get('seconds')}s, usage {r.get('usage')}, summary: {str(r.get('summary'))[:300]}",
               flush=True)
@@ -125,8 +164,10 @@ async def submit(task: dict, urls: dict, workdir: Path, answer: dict, deadline: 
                   TENDER_PASSWORD=t.get("password", ""), MAIL_URL=m["url"], MAIL_USERNAME=m.get("username", ""),
                   MAIL_PASSWORD=m.get("password", ""), BRIEF=submission_section(task["brief"]), BID=bid_text(answer))
     system = (PROMPTS / "system.md").read_text()
-    async with Agent("submit", {"tender": urls["tender"], "mail": urls["mail"]}, workdir) as agent:
-        return await agent.run(system, prompt, deadline, max_turns=120, required=REQUIRED["submit"],
+    hosts = {"tender": urlparse(t["url"]).hostname or "", "mail": urlparse(m["url"]).hostname or ""}
+    async with Agent("submit", {"tender": urls["tender"], "mail": urls["mail"]}, workdir,
+                     home_hosts=hosts) as agent:
+        return await agent.run(system, prompt, deadline, max_turns=70, required=REQUIRED["submit"],
                                progress_checks=False)
 
 
@@ -144,15 +185,22 @@ async def solve(task: dict, cdp_urls: list[str]) -> dict | None:
     (workdir / "facts.json").write_text(json.dumps(facts, ensure_ascii=False, indent=2))
     print(f"Research done at {time.monotonic() - start:.0f}s", flush=True)
 
+    decided = analyst.from_facts(facts, task["brief"])
     try:
-        decided = await analyst.analyse(task["brief"], facts,
-                                        timeout=max(60, min(ANALYST_S, end - time.monotonic() - SUBMIT_S)))
-        (workdir / "order.json").write_text(json.dumps(decided, ensure_ascii=False, indent=2))
-        positions = (facts.get("tender") or {}).get("positions") if isinstance(facts.get("tender"), dict) else None
-        answer = analyst.to_answer(decided, expected_positions=len(positions) if positions else None)
+        llm = await analyst.analyse(task["brief"], facts,
+                                    timeout=max(12, min(ANALYST_S, end - time.monotonic() - SUBMIT_S)))
+        decided = analyst.from_facts(facts, task["brief"], seed=llm)
+    except Exception as error:  # noqa: BLE001  code order is enough to submit
+        print(f"Analyst skipped: {error!r}", flush=True)
+    decided = analyst.sanitize_decision(decided, facts)
+    (workdir / "order.json").write_text(json.dumps(decided, ensure_ascii=False, indent=2))
+    try:
+        answer = analyst.to_answer(decided)
     except Exception as error:  # noqa: BLE001
-        print(f"Analysis failed: {error!r}", flush=True)
-        return None
+        print(f"Pricing fell back: {error!r}", flush=True)
+        answer = pricing.no_bid(decided.get("tender_reference") or analyst.find_reference(facts, task["brief"]))
+    if not answer.get("tender_reference"):
+        answer["tender_reference"] = analyst.find_reference(facts, task["brief"])
     print(f"Bid at {time.monotonic() - start:.0f}s: {decided.get('decision')} because {decided.get('decision_notes')}",
           flush=True)
     for line in decided.get("lines") or []:

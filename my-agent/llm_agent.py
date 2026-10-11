@@ -17,6 +17,8 @@ import zipfile
 from contextlib import AsyncExitStack
 from pathlib import Path
 
+from urllib.parse import urlparse
+
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from openai import AsyncOpenAI
@@ -70,8 +72,15 @@ def _bytes_to_text(name: str, data: bytes) -> str:
 class Agent:
     """One model session with tools over named browsers. Use `async with Agent(...) as agent: await agent.run(...)`."""
 
-    def __init__(self, name: str, browsers: dict[str, str], workdir: Path, model: str = "qwen"):
+    def __init__(self, name: str, browsers: dict[str, str], workdir: Path, model: str = "qwen",
+                 must_search: list[str] | None = None, more_groups=None, home_hosts: dict[str, str] | None = None,
+                 auto_drain: bool = False):
         self.name, self.browsers, self.model = name, browsers, model
+        self.must_search = [str(g).strip().split()[0] for g in (must_search or []) if g]
+        self.more_groups = more_groups
+        self.home_hosts = {key: str(host).lower() for key, host in (home_hosts or {}).items() if host}
+        self.auto_drain = auto_drain
+        self._drained = 0
         self.dir = workdir / name
         self.downloads = self.dir / "downloads"
         self.downloads.mkdir(parents=True, exist_ok=True)
@@ -85,6 +94,7 @@ class Agent:
         self.required: list[str] = []
         self.usage = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0}
         self._stack = AsyncExitStack()
+        self._model_timeouts = 0
 
     async def __aenter__(self):
         try:
@@ -113,6 +123,15 @@ class Agent:
     def _print(self, text: str):
         print(f"[{self.name}] {text}", flush=True)
 
+    def _groups(self) -> list[str]:
+        groups = list(self.must_search)
+        extra = self.more_groups() if callable(self.more_groups) else []
+        for group in extra or []:
+            token = str(group).strip().split()[0]
+            if token and token not in groups:
+                groups.append(token)
+        return groups
+
     async def run(self, system: str, task: str, deadline: float, max_turns: int = 80,
                   required: list[str] | None = None, progress_checks: bool = True) -> dict:
         """Loop until the model calls finish, the turns run out or `deadline` (time.monotonic()) passes.
@@ -127,8 +146,13 @@ class Agent:
                 self._print("deadline reached")
                 break
             if left < 60 and not nudged:
-                messages.append({"role": "user", "content": "Less than a minute left: save_facts with everything you "
-                                 "have now, then finish."})
+                missing = missing_keys(self.facts, self.required)
+                if missing:
+                    messages.append({"role": "user", "content": "Less than a minute left. Still missing "
+                                     f"{', '.join(missing)}. Open those pages, save_facts, then finish."})
+                else:
+                    messages.append({"role": "user", "content": "Less than a minute left: save_facts with everything "
+                                     "you have now, then finish."})
                 nudged = True
             if progress_checks and turn and turn % 10 == 0:
                 missing = missing_keys(self.facts, self.required)
@@ -137,8 +161,14 @@ class Agent:
             _compact(messages)
             try:
                 response = await asyncio.wait_for(self.client.chat.completions.create(
-                    model=self.model, messages=messages, tools=self.tools, temperature=0.2), timeout=min(left, 300))
-            except (asyncio.TimeoutError, Exception) as error:  # noqa: BLE001  keep the facts saved so far
+                    model=self.model, messages=messages, tools=self.tools, temperature=0), timeout=min(left, 180))
+            except (asyncio.TimeoutError, TimeoutError) as error:
+                self._model_timeouts += 1
+                self._print(f"model call timed out ({self._model_timeouts}): {error!r}")
+                if self._model_timeouts >= 3:
+                    break
+                continue
+            except Exception as error:  # noqa: BLE001  keep the facts saved so far
                 self._print(f"model call failed: {error!r}")
                 break
             self._count(response)
@@ -176,16 +206,27 @@ class Agent:
         except ValueError:
             return f"Error: the arguments are not valid JSON: {arguments[:200]}"
         if name == "save_facts":
-            self.facts = args.get("facts", args)
+            incoming = args.get("facts", args)
+            if isinstance(incoming, dict) and isinstance(self.facts, dict):
+                from harvest import merge_facts
+                self.facts = merge_facts(self.facts, incoming)
+            else:
+                self.facts = incoming
             self.facts_path.write_text(json.dumps(self.facts, ensure_ascii=False, indent=2))
             missing = missing_keys(self.facts, self.required)
-            return "Saved." + (f" Still missing: {', '.join(missing)}." if missing else (
-                " Everything required is there: finish now, unless a value you know exists is still unread."))
+            hint = unread_records(self.facts, must_search=self._groups())
+            extra = (f" Still missing: {', '.join(missing)}." if missing else
+                     (" Everything required is there." if not hint else ""))
+            extra += f" {hint}" if hint else " Finish now, unless a value you know exists is still unread."
+            return "Saved." + extra
         if name == "finish":
             missing = missing_keys(self.facts, self.required)
             if missing:
                 return (f"Not finished: the saved facts have no {', '.join(missing)}. Collect them, call "
                         "save_facts with the complete JSON, then finish.")
+            hint = unread_records(self.facts, must_search=self._groups())
+            if hint:
+                return f"Not finished: {hint}"
             self.finished = args.get("summary", "")
             return "Finished."
         if name == "read_file":
@@ -194,12 +235,77 @@ class Agent:
         session = self.sessions.get(browser)
         if session is None or tool not in BROWSER_TOOLS:
             return f"Error: unknown tool {name}"
+        if tool == "browser_navigate":
+            blocked = host_block(self.home_hosts.get(browser), args.get("url") or "")
+            if blocked:
+                return blocked
         try:
             result = await asyncio.wait_for(session.call_tool(tool, args), timeout=90)
         except Exception as error:  # noqa: BLE001  the model decides how to recover
             return f"Error: {error!r}"
         text = "\n".join(getattr(part, "text", "") for part in result.content if getattr(part, "type", "") == "text")
-        return self._inline_files(text) or "(no text result)"
+        text = self._inline_files(text) or "(no text result)"
+        self._ingest(text)
+        if self.auto_drain and tool in {"browser_snapshot", "browser_navigate", "browser_click"}:
+            extra = await self._drain(browser, session, text)
+            if extra:
+                text = extra
+        return text
+
+    def _ingest(self, text: str):
+        """Code reads the page the model opened and unions the records into facts."""
+        from extract import read_page
+        from harvest import merge_facts
+        got = read_page(text)
+        if not got:
+            return
+        base = self.facts if isinstance(self.facts, dict) else {}
+        self.facts = merge_facts(base, got)
+        self.facts_path.write_text(json.dumps(self.facts, ensure_ascii=False, indent=2))
+
+    async def _drain(self, browser: str, session, text: str) -> str:
+        """Open unread rows of the result set the model is already on. Does not search the site."""
+        from harvest import ref_for, unread_on_page
+        if self._drained >= 20:
+            return ""
+        unread = unread_on_page(text, self.facts)
+        opened = 0
+        last = text
+        for ident in unread[:6]:
+            ref = ref_for(text, ident)
+            if not ref:
+                continue
+            args = {"ref": ref, "element": ident}
+            try:
+                result = await asyncio.wait_for(session.call_tool("browser_click", args), 25)
+            except Exception:
+                try:
+                    result = await asyncio.wait_for(
+                        session.call_tool("browser_click", {"target": ref, "element": ident}), 25)
+                except Exception:
+                    continue
+            page = "\n".join(getattr(part, "text", "") for part in result.content
+                             if getattr(part, "type", "") == "text")
+            page = self._inline_files(page)
+            self._ingest(page)
+            last = page or last
+            opened += 1
+            self._drained += 1
+            try:
+                await asyncio.wait_for(session.call_tool("browser_navigate_back", {}), 15)
+            except Exception:
+                pass
+        if opened:
+            self._print(f"opened {opened} listed records")
+            try:
+                snap = await asyncio.wait_for(session.call_tool("browser_snapshot", {}), 20)
+                last = "\n".join(getattr(part, "text", "") for part in snap.content
+                                 if getattr(part, "type", "") == "text")
+                last = self._inline_files(last)
+                self._ingest(last)
+            except Exception:
+                pass
+        return last
 
     def _inline_files(self, text: str) -> str:
         """Playwright MCP sometimes links a snapshot file instead of including it: put the page into the result."""
@@ -280,7 +386,54 @@ def _compact(messages: list[dict]):
             message["content"] = message["content"][:OLD_RESULT_CHARS] + "\n[... older page snapshot shortened]"
 
 
+def host_block(allowed: str | None, url: str) -> str:
+    """Reject navigation off the website this browser was given. Empty or relative URLs are allowed."""
+    if not allowed or not url or not str(url).startswith("http"):
+        return ""
+    host = (urlparse(str(url)).hostname or "").lower()
+    allowed = allowed.lower().split(":")[0]
+    if not host or host == allowed or host.endswith("." + allowed) or allowed.endswith("." + host):
+        return ""
+    return f"Error: this browser stays on {allowed}. Do not open {host}."
+
+
 def missing_keys(facts, required: list[str]) -> list[str]:
     """Required top-level keys that are absent or empty in the saved facts."""
     facts = facts if isinstance(facts, dict) else {}
     return [key for key in required if facts.get(key) in (None, "", [], {})]
+
+
+def unread_records(facts, must_search: list[str] | None = None) -> str:
+    """Block finish when a register was saved but the document bodies were not, or a catalogue group is unsearched."""
+    from match import catalog_groups, covered_groups
+
+    facts = facts if isinstance(facts, dict) else {}
+    revisions = facts.get("revisions") if isinstance(facts.get("revisions"), list) else []
+    requirements = facts.get("requirements") if isinstance(facts.get("requirements"), list) else []
+    if revisions and not requirements:
+        return ("Revision ids are listed, but no requirements from a document body. "
+                "Open each revision document itself — a register row is not enough — then save_facts.")
+    unmarked = []
+    for row in revisions:
+        if not isinstance(row, dict):
+            continue
+        mark = " ".join(str(row.get(k) or "") for k in ("marking", "status", "marking_raw")).lower()
+        if not any(w in mark for w in ("gültig", "gueltig", "current", "aktuell", "ersetzt", "superseded", "ungültig")):
+            if row.get("id"):
+                unmarked.append(str(row["id"]))
+    if unmarked:
+        return ("These revisions have no marking words from a document: "
+                + ", ".join(unmarked[:8]) + ". Open each document and copy the marking as written.")
+    named = facts.get("catalog_groups")
+    groups = [str(g).strip().split()[0] for g in named if g] if isinstance(named, list) else catalog_groups(facts)
+    for group in must_search or []:
+        token = str(group).strip().split()[0]
+        if token and token not in groups:
+            groups.append(token)
+    searched = {str(g).strip().split()[0] for g in (facts.get("searched_groups") or []) if g}
+    searched |= covered_groups(facts)
+    missing = [group for group in groups if group not in searched]
+    if missing:
+        return ("Catalogue groups not yet searched: " + ", ".join(missing[:8]) +
+                ". Search each group, save materials or an empty result, add it to searched_groups, then save_facts.")
+    return ""

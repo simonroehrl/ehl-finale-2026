@@ -6,7 +6,8 @@ Website: {SITE_URL} · username `{USERNAME}` · password `{PASSWORD}`
 {BRIEF}
 </brief>
 
-Work through these steps in order. After each step, call `save_facts` with the complete JSON so far.
+Work through these steps in order. Open each page; code reads the tables. Call `save_facts` only for a short note
+if something is still missing.
 
 1. Log in, open the tender named in the brief. Save `tender`: reference, title, buyer, deadline.
 2. Open its bill of quantities (Leistungsverzeichnis). Save `positions`: for every position its number,

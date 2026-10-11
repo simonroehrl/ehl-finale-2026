@@ -1,0 +1,1 @@
+Which job does this website do? Reply with one JSON object: {"role":"tender"} where role is tender (the public tender, quantities and Q&A), spec (the technical specification), erp (materials, stock and prices) or mail (the sales inbox). Use only the page in front of you.

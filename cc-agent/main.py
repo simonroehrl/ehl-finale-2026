@@ -20,7 +20,6 @@ import shutil
 import sys
 import tempfile
 import time
-from decimal import Decimal
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -31,10 +30,13 @@ import browsers
 import run as contract
 from evidence import Evidence, merge
 from resolver import resolve
+from submit_helpers import (CLEAR_GATES_JS, HEARTBEAT_S, bid_values, german, phase_deadlines,
+                            require_credit)
 
 HERE = Path(__file__).resolve().parent
 NODE_BIN = HERE / "node_modules" / ".bin"
-MODEL = os.environ.get("RFQ_MODEL", "opus")
+MODEL = os.environ.get("RFQ_MODEL", "sonnet")
+SUBMIT_MODEL = os.environ.get("RFQ_SUBMIT_MODEL", "haiku")
 GAP_ROUNDS = 1
 # Claude Code's model classes on OpenRouter (its Claude Code guide): Anthropic's own models.
 OPENROUTER_MODELS = {"OPUS": "~anthropic/claude-opus-latest", "SONNET": "~anthropic/claude-sonnet-latest",
@@ -72,25 +74,34 @@ evidence you find for them (same structure; records you return replace earlier o
 
 {gaps}"""
 
-SUBMIT = """Enter and sign this bid on the tender portal. Use the browser tools (tabs for the tender portal and the
-webmail).
+SUBMIT = """Enter and sign this prepared bid. Use browser tools; tabs for the tender portal and the webmail.
 
-Websites and logins:
+Websites and logins (only if a session expired):
 {sites}
 
-How to submit, from the task brief:
+Open tabs already in this browser (stay on them; do not open the site home unless the session died):
+<tabs>
+{tabs}
+</tabs>
+
+How to submit, from the task brief (labels and steps may differ; follow what you see):
 <submission>
 {submission}
 </submission>
 
-The bid, already calculated; enter exactly these values:
+Type these strings exactly with fill_form / type. Do not recompute them. Do not use run_code_unsafe to fill amounts.
+<values>
+{values}
+</values>
+
 <bid>
 {bid}
 </bid>
 
-Go straight to the bid submission. Never use a back button: it clears later steps. Request the TAN only when
-everything else is entered, read the newest TAN mail, enter it within five minutes and confirm "Angebot verbindlich
-abgeben" in the browser dialog. Reply with the confirmation the portal shows."""
+If a page is blocked by a robot checkbox or a range slider, evaluate the snippet in gates.js (same folder), then continue.
+Call handle_dialog with accept true before the binding submit click. Request a TAN only after every other field is
+filled; open the newest TAN mail and type the code you see (a new request invalidates the previous one). Never go
+back. Reply with the confirmation the portal shows."""
 
 
 def sites_text(task: dict) -> str:
@@ -106,11 +117,6 @@ def submission_section(brief: str) -> str:
     """The brief's part about entering the bid (from its "Submission" heading); the whole brief if it has none."""
     match = re.search(r"^#+ *(Submission|Abgabe|Angebotsabgabe)\b.*$", brief, re.M | re.I)
     return brief[match.start():] if match else brief
-
-
-def german(value) -> str:
-    """1234.5 -> "1.234,50", the format the tender portal expects."""
-    return f"{Decimal(str(value)):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def bid_text(answer: dict, omitted: list[str]) -> str:
@@ -176,6 +182,7 @@ def check_openrouter_key(env: dict) -> None:
             info = json.load(response).get("data", {})
         print(f"OpenRouter accepts the key: label {info.get('label')!r}, limit {info.get('limit')}, "
               f"usage {info.get('usage')}", flush=True)
+        require_credit(info)
     except HTTPError as error:
         raise SystemExit(f"OpenRouter rejects the key: HTTP {error.code} "
                          f"{error.read().decode('utf-8', errors='replace')[:300]}")
@@ -224,15 +231,16 @@ def last_result(text: str) -> dict | None:
         return None
 
 
-async def claude(name: str, prompt: str, cdp_url: str, workdir: Path, schema: dict | None) -> dict:
+async def claude(name: str, prompt: str, cdp_url: str, workdir: Path, schema: dict | None,
+                 deadline: float | None = None, model: str | None = None) -> dict:
     """One headless Claude Code session on the browser at `cdp_url`; only browser and file-reading tools."""
     d = workdir / name
     (d / "downloads").mkdir(parents=True, exist_ok=True)
     mcp = {"mcpServers": {"browser": {"command": str(NODE_BIN / "playwright-mcp"), "args": [
         "--cdp-endpoint", cdp_url, "--output-dir", str(d / "downloads"), "--image-responses", "omit"]}}}
     (d / "mcp.json").write_text(json.dumps(mcp))
-    cmd = [claude_bin(), "-p", prompt, "--model", MODEL, "--mcp-config", str(d / "mcp.json"), "--strict-mcp-config",
-           "--setting-sources", "user", "--allowedTools", "mcp__browser", "Read",
+    cmd = [claude_bin(), "-p", prompt, "--model", model or MODEL, "--mcp-config", str(d / "mcp.json"),
+           "--strict-mcp-config", "--setting-sources", "user", "--allowedTools", "mcp__browser", "Read",
            "--disallowedTools", "Bash", "Write", "Edit", "WebFetch", "WebSearch", "Task",
            "--add-dir", str(d), "--output-format", "stream-json", "--verbose", "--no-session-persistence"]
     if schema:
@@ -240,11 +248,26 @@ async def claude(name: str, prompt: str, cdp_url: str, workdir: Path, schema: di
     started = time.monotonic()
     proc = await asyncio.create_subprocess_exec(*cmd, cwd=d, env=claude_env(), stdout=asyncio.subprocess.PIPE,
                                                 stderr=asyncio.subprocess.STDOUT, limit=2**26)
-    result, tools = {}, 0
+    result, tools, last_event = {}, 0, started
     with (d / "session.jsonl").open("w") as log:
-        async for raw in proc.stdout:
+        while True:
+            if deadline is not None and time.monotonic() >= deadline - 4:
+                print(f"[{name}] deadline, stopping after {time.monotonic() - started:.0f}s", flush=True)
+                proc.kill()
+                break
+            try:
+                raw = await asyncio.wait_for(proc.stdout.readline(), timeout=HEARTBEAT_S)
+            except asyncio.TimeoutError:
+                silent = time.monotonic() - last_event
+                print(f"[{name}] {time.monotonic() - started:5.0f}s still running "
+                      f"(no event for {silent:.0f}s)", flush=True)
+                continue
+            if not raw:
+                break
+            last_event = time.monotonic()
             line = raw.decode("utf-8", errors="replace")
             log.write(line)
+            log.flush()
             try:
                 event = json.loads(line)
             except ValueError:
@@ -257,9 +280,19 @@ async def claude(name: str, prompt: str, cdp_url: str, workdir: Path, schema: di
                         print(f"[{name}] {time.monotonic() - started:5.0f}s {block['name']}", flush=True)
             elif event.get("type") == "result":
                 result = event
-    await proc.wait()
+    if proc.returncode is None:
+        try:
+            await asyncio.wait_for(proc.wait(), timeout=8)
+        except asyncio.TimeoutError:
+            proc.kill()
+            await proc.wait()
+    else:
+        await proc.wait()
+    err = " (error)" if result.get("is_error") else ""
     print(f"[{name}] done in {time.monotonic() - started:.0f}s, {tools} tool calls, {result.get('num_turns')} turns, "
-          f"${result.get('total_cost_usd') or 0:.2f}" + (" (error)" if result.get("is_error") else ""), flush=True)
+          f"${result.get('total_cost_usd') or 0:.2f}{err}", flush=True)
+    if result.get("is_error"):
+        print(f"[{name}] {str(result.get('result'))[:800]}", flush=True)
     return result
 
 
@@ -271,23 +304,72 @@ def evidence_of(result: dict) -> Evidence:
     return Evidence.model_validate(data)
 
 
-async def solve(task: dict, cdp_url: str) -> None:
+async def attach_browser(playwright, cdp_url: str):
+    """Watch the run's browser so confirm dialogs are accepted without a model turn."""
+    browser = await playwright.chromium.connect_over_cdp(cdp_url)
+
+    async def accept(dialog):
+        print(f"[dialog] accepting {dialog.type}: {str(dialog.message)[:80]}", flush=True)
+        await dialog.accept()
+
+    def watch(page):
+        page.on("dialog", accept)
+
+    for ctx in browser.contexts:
+        ctx.on("page", watch)
+        for page in ctx.pages:
+            watch(page)
+    return browser
+
+
+async def tab_lines(browser) -> str:
+    lines = []
+    for ctx in browser.contexts:
+        for index, page in enumerate(ctx.pages):
+            title = ""
+            try:
+                title = await page.title()
+            except Exception:  # noqa: BLE001  a closed tab must not stop submit
+                pass
+            lines.append(f"{index}: {page.url}" + (f" — {title}" if title else ""))
+    return "\n".join(lines) or "(no open tabs)"
+
+
+async def solve(task: dict, cdp_url: str, playwright) -> None:
     workdir = Path(tempfile.mkdtemp(prefix="rfq-run-"))
     started = time.monotonic()
+    research_by, submit_by = phase_deadlines(task)
+    print(f"Workdir {workdir}; research {research_by - started:.0f}s submit {submit_by - started:.0f}s",
+          flush=True)
     schema = Evidence.model_json_schema()
     sites = sites_text(task)
 
-    evidence = evidence_of(await claude(
-        "retrieval", RETRIEVAL.format(brief=task["brief"], sites=sites, extra=""), cdp_url, workdir, schema))
+    retrieved = await claude(
+        "retrieval", RETRIEVAL.format(brief=task["brief"], sites=sites, extra=""),
+        cdp_url, workdir, schema, deadline=research_by)
+    if retrieved.get("is_error") or not retrieved:
+        raise SystemExit(f"retrieval failed: {str(retrieved.get('result') or retrieved)[:800]}")
+    try:
+        evidence = evidence_of(retrieved)
+    except Exception as error:  # noqa: BLE001  a killed session may have no JSON
+        raise SystemExit(f"retrieval produced no evidence: {error!r}")
     resolution = resolve(evidence)
     for round_ in range(GAP_ROUNDS):
         if not resolution.gaps:
             break
+        if time.monotonic() >= research_by - 15:
+            print(f"skipping gaps, submit reserve ({len(resolution.gaps)} open)", flush=True)
+            break
         print(f"{len(resolution.gaps)} gaps: " + "; ".join(g.question for g in resolution.gaps), flush=True)
         questions = "\n".join(f"- [{g.site}] {g.question}" for g in resolution.gaps)
-        extra = evidence_of(await claude(
-            f"gaps{round_ + 1}", RETRIEVAL.format(brief=task["brief"], sites=sites, extra=GAPS.format(gaps=questions)),
-            cdp_url, workdir, schema))
+        try:
+            extra = evidence_of(await claude(
+                f"gaps{round_ + 1}",
+                RETRIEVAL.format(brief=task["brief"], sites=sites, extra=GAPS.format(gaps=questions)),
+                cdp_url, workdir, schema, deadline=research_by))
+        except Exception as error:  # noqa: BLE001
+            print(f"gaps failed: {error!r}", flush=True)
+            break
         evidence = merge(evidence.case, evidence, extra)
         resolution = resolve(evidence)
 
@@ -298,10 +380,21 @@ async def solve(task: dict, cdp_url: str) -> None:
               flush=True)
         return
     bid = bid_text(resolution.answer, resolution.omitted)
+    values = json.dumps(bid_values(resolution.answer), ensure_ascii=False, indent=2)
     print(f"Bid at {time.monotonic() - started:.0f}s:\n{bid}", flush=True)
 
-    result = await claude("submit", SUBMIT.format(sites=sites, submission=submission_section(task["brief"]),
-                                                  bid=bid), cdp_url, workdir, None)
+    submit_dir = workdir / "submit"
+    submit_dir.mkdir(parents=True, exist_ok=True)
+    (submit_dir / "gates.js").write_text(CLEAR_GATES_JS, encoding="utf-8")
+    (submit_dir / "values.json").write_text(values, encoding="utf-8")
+    browser = await attach_browser(playwright, cdp_url)
+    tabs = await tab_lines(browser)
+    print(f"Open tabs:\n{tabs}", flush=True)
+    result = await claude(
+        "submit",
+        SUBMIT.format(sites=sites, submission=submission_section(task["brief"]), bid=bid,
+                      values=values, tabs=tabs),
+        cdp_url, workdir, None, deadline=submit_by, model=SUBMIT_MODEL)
     print(f"Submission at {time.monotonic() - started:.0f}s: {result.get('result')}", flush=True)
 
 
@@ -313,7 +406,7 @@ async def main() -> int:
     async with async_playwright() as playwright:
         urls, local = await browsers.cdp_endpoints(playwright, 1)
         try:
-            await solve(task, urls[0])
+            await solve(task, urls[0], playwright)
         finally:
             for browser in local:
                 await browser.close()

@@ -1,0 +1,9 @@
+{
+  "name": "atira-rfq-cc",
+  "private": true,
+  "description": "Claude Code (retrieval and submission sessions) and Playwright MCP (their browser tools)",
+  "dependencies": {
+    "@anthropic-ai/claude-code": "2.1.296",
+    "@playwright/mcp": "0.0.83"
+  }
+}
