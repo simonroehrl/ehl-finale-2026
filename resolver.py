@@ -317,7 +317,9 @@ class Resolver:
         material = self.material(p, req, attrs)
         condition = self.condition(material)
         surcharge = self.mass_surcharge(material)
-        for name in ("stock_pieces", "stock_lead_time_weeks", "production_lead_time_weeks"):
+        if available_stock(material) is None:
+            raise Missing("erp", f"Material {material.number}: record its stock figures (every category shown).")
+        for name in ("stock_lead_time_weeks", "production_lead_time_weeks"):
             if getattr(material, name) is None:
                 raise Missing("erp", f"Material {material.number}: record {name.replace('_', ' ')}.")
 
@@ -355,7 +357,7 @@ class Resolver:
 
         return pricing.Line(
             position=p, quantity=quantity, material=material.number, condition=condition,
-            stock=material.stock_pieces, stock_lead_time_weeks=material.stock_lead_time_weeks,
+            stock=available_stock(material), stock_lead_time_weeks=material.stock_lead_time_weeks,
             production_lead_time_weeks=material.production_lead_time_weeks, commitment=commitment,
             mass_surcharge_per_unit=surcharge, setup_fee=self.assigned(p, "setup_fee_eur") or pricing.ZERO,
             discount_scope=scope, carton_size=carton_size, carton_price=carton_price,
@@ -403,6 +405,15 @@ class Resolver:
             raise Missing("mail", f"{found[0].id}: the {key} allocation rule is not the largest-remainder rule.")
         self.note(f"project bonus {key}: {len(found[1].bands)} bands ({found[0].id})")
         return [pricing.BonusBand(b.lower_eur, b.upper_eur, b.percent) for b in found[1].bands]
+
+
+def available_stock(material: Material) -> int | None:
+    """Freely available stock: the sum of the 'free' rows when the system splits stock into categories, otherwise the
+    single figure; None when nothing usable was recorded."""
+    free = [r.quantity for r in material.stock_rows if r.kind == "free"]
+    if free:
+        return sum(free)
+    return material.stock_pieces
 
 
 def resolve(evidence: Evidence) -> Resolution:

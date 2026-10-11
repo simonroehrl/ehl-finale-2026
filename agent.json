@@ -1,5 +1,5 @@
 {
-  "setup": ["sh", "-c", "uv sync && npm ci --no-fund --no-audit"],
+  "setup": ["uv", "sync"],
   "run": ["uv", "run", "--no-sync", "python", "main.py"],
   "models": [],
   "browsers": 1

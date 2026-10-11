@@ -160,7 +160,9 @@ def allocate_cents(total: Decimal, weights: dict[str, Decimal]) -> dict[str, Dec
 
 def _position_key(position: str):
     """Ascending position identifier: numeric parts compared as numbers ("2" before "10", "1.2" before "1.10")."""
-    return tuple(int(part) if part.isdigit() else part for part in position.replace("-", ".").split("."))
+    # (0, number) or (1, text) per part, so identifiers that mix letters and digits ("A.1", "1.1a") still compare
+    return tuple((0, int(part), "") if part.isdigit() else (1, 0, part)
+                 for part in position.replace("-", ".").split("."))
 
 
 def project_bonus(bands: list[BonusBand], eligible_total: Decimal) -> Decimal:

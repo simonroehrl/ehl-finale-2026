@@ -93,7 +93,8 @@ class QAAnswer(Record):
     number: str = Field(description="The answer's number as shown")
     date: When = Field(description="Publication date, ISO 8601 with timezone (apply the site's format hints)")
     reference: str | None = Field(None, description="The tender reference the answer is for, if shown")
-    text: str = Field(description="The answer verbatim")
+    text: str = Field(description="The answer verbatim. Code never reads it: every quantity change, technical "
+                                  "amendment, withdrawal and key assignment it states goes into the fields below")
     withdraws: list[str] = Field(default_factory=list, description="Numbers of earlier answers it withdraws")
     quantity_changes: list[QuantityChange] = Field(default_factory=list)
     amendments: list[Amendment] = Field(default_factory=list, description="Technical amendments (Nachträge)")
@@ -138,13 +139,25 @@ class PriceCondition(Record):
     scales: list[PriceScale]
 
 
+class StockRow(Record):
+    category: str = Field(description="The stock category exactly as the system labels it")
+    kind: Literal["free", "reserved", "blocked", "quality_inspection", "in_transit", "total", "other"] = Field(
+        description="free: unrestricted, available for delivery now; total: a sum over several categories")
+    quantity: int
+
+
 class Material(Record):
     number: str
     status: Literal["active", "blocked", "other"]
     status_raw: str | None = Field(None, description="The status code or text as shown")
     catalog_group: str | None = None
     attributes: RequirementAttributes
-    stock_pieces: int | None = None
+    stock_rows: list[StockRow] = Field(default_factory=list, description=(
+        "Every stock figure the system shows for this material, one row per category or column (also totals and "
+        "figures that are reserved, blocked, in inspection or in transit). Record all of them as shown; code uses "
+        "only the freely available stock."))
+    stock_pieces: int | None = Field(None, description="Only when the system shows one single stock figure without "
+                                                       "any categories")
     stock_lead_time_weeks: int | None = None
     production_lead_time_weeks: int | None = None
     pieces_per_carton: int | None = Field(None, description="Packinhalt")

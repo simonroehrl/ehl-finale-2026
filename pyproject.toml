@@ -1,0 +1,13 @@
+[project]
+name = "atira-rfq-deepseek-http"
+version = "0.1.0"
+description = "Four tools over plain HTTP (view, submit, record, gaps), steered by DeepSeek in its own loop"
+requires-python = ">=3.12"
+# pinned, so the run step gets the versions the kit was tested with
+dependencies = [
+    "mcp==2.3.0",
+    "pydantic==2.14.0",
+]
+
+[tool.uv]
+package = false
