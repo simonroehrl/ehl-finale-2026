@@ -1,0 +1,513 @@
+Look at all .t3 thread chats and especially at 6d173657-1305-4fd6-b6ba-ba7ecde844c1 f837200d-863a-435d-b856-473ff6996e3f  1b019342-34c5-42a2-b639-3a7a81fc81a5 whats the solution here. How are people possible to get to 38 seconds time
+
+---
+
+<task-notification>
+<task-id>a9f97394922cf1f92</task-id>
+<tool-use-id>toolu_01RhZ2w4G6AePGFcRyejAuJP</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-simon-hackathon/5f1637bc-638d-4840-ae91-ddc7935d9a08/tasks/a9f97394922cf1f92.output</output-file>
+<status>completed</status>
+<summary>Agent "Summarize thread f837200d" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The transcript covers one session (01:41–05:52, 2026-10-11). It tested local, research-only variants (p4–p13) of a Sonnet agent and reported results to the "Reliable 100% Quality" thread (6d173657, the lab loop session "hackathon-af"). Nothing was submitted. **There are no Atira run IDs**: all runs were local, logged in `explore/results.jsonl` (the lab's own runs are in `lab/results.jsonl`). Costs are estimates. "Time" means research time only, not signing the bid.
+
+**1) Approaches and results**
+
+Earlier work it cites:
+- **fastread** (hardcoded verbs, Opus): 100 in 135 s, $1.09, about 45 s reading and 78 s writing evidence. Not generic.
+- **a0 baseline** (general Sonnet): 258 s locally, about $1.26, produced no answer.
+- **orch-agent:** 697 s. **sched-agent:** 767 s.
+- **Lab a3:** 100 at 374 s. **Lab a5:** research about 255 s, about $2.4–2.6.
+
+This session's variants:
+
+| Variant | Change | Quality | Time | Cost |
+|---|---|---|---|---|
+| p4 | one Sonnet session per website, each with its own browser, shared evidence store | 100 | 350 s | $2.21 |
+| p5 | + `peek` at others' records, batch `read(urls)`, hint to make parallel calls | 100 | 351 s | $2.70 |
+| p6 | + keep-alive while waiting, 5 s Playwright timeout | 98.7 | 518 s | $3.21 |
+| p8 | + "open keys" list in `gaps`, gap rounds resume the same session | 100, 100 | 257 / 361 s | $2.07–2.71 |
+| p9 | + slim system prompt, only the Read tool, stock-rows fix | 100, 100 | 203 / 419 s | $1.67–2.17 |
+| p10 | + 6 s faster session start, merge fix | 8 of 9 at 100 (one 80.05) | 228–427 s | $1.67–2.31 |
+| p11 | finished sessions help slower sites | 100, 85.25, 100 | 214–403 s | $4.25–5.16 |
+| p13 | p10 + price check + tool-description limit + gate rule + number-format guard | 9 of 9 valid runs at 100 | 190–412 s, typically about 235 s | $1.58–2.47 |
+
+p13 detail: normal sites 190–264 s; all site changes combined 209–266 s; English text 234 s; other number formats and URLs 412 s; the last live run 276 s at $1.85. A tenth run scored 10 (a wrong no_bid) because of a flaw in the shared test setup, not the agent.
+
+**2) Conclusions**
+- The per-site parallel design gives reliable 100s. It is **not clearly faster** than a5; the gains are reliability and cost per turn.
+- Tested, verified fixes adopted by the lab:
+  - **Price-merge fix:** each price condition is replaced whole instead of field by field. Without it, a price could end up 100× too low; this caused the 85.25.
+  - **Faster session start:** `stdin=DEVNULL` brought the first action from 12–14 s to 6.5–8 s in every session.
+  - **Slim `--system-prompt` with only Read:** base context fell from about 9k to 1.5k tokens, about 20% fewer tokens per turn.
+  - **Price check:** flags any price more than 20× off the material's other prices or similar materials. It caught all 3 real misreads in 20 runs with no false positives. The 80.05 came from writing "64,853 (en-US)" as 64.853.
+- Two more additions came from a peer session: an environment setting that stops Claude Code cutting long tool descriptions short, and a guard that bounces bare ambiguous numbers.
+- Helper sessions were dropped: about 2× the cost and they caused merge bugs.
+- Keep-alive is useless: the ERP login expires about 4 minutes after login no matter what.
+
+**3) Where time goes, and speedup ideas**
+- Each model turn takes about 2.5–3 s, and they run one after another.
+- The slow chain is the spec portal (about 150–220 s: gates, nested viewers, re-logins) followed by ERP (about 100 s). ERP finished last in 6 of 8 runs, up to 419–423 s.
+- Mail runs vary because the model writes its own browser scripts, and those wait the default 30 s on missing elements. That flag does not cover them.
+- In p4, ERP sat idle from 51 s to 204 s waiting on the spec; the open-keys list fixed that.
+- Cost: cache reads $1.14, cache writes $0.67, output $0.40 (p4). Context grows from about 22k to 50k tokens by turn 40.
+- Submitting takes about 230 s (a5). Full lab runs take 840–890 s locally, about 1,220–1,290 s on Atira at 1.45× slowdown, which exceeds the 20-minute limit.
+
+Untested ideas:
+- Fill in the bid steps that don't depend on price during research (saves an estimated 60–80 s).
+- A generic login tool.
+- Calling the sites' JSON APIs directly (skipped).
+- Run the lab's submission step on p13's research. Estimated 500–550 s locally (about 730–800 s on Atira); a10 is now trying this, unmeasured so far.
+
+**4) Fast leaderboard competitors (about 38 s)**
+The transcript doesn't discuss the leaderboard or how anyone gets very fast times. The fastest result it mentions is the hardcoded fastread at 135 s.
+
+**5) Fair-play constraints**
+- The agent must be generic: no hardcoded verbs, and none of the brief's German subject names in the code.
+- Checked for public-1 values leaking into the code. Example numbers in web_tools comments were the only leak and were removed.
+- No pages read around a gate. The batch `read(urls)` tool let mail read messages without passing their slider gate in 2 runs. p13 adds a rule: open one page of each kind in the browser first and never read around a gate. A check of the 7 latest runs found it clean.
+- A shared run lock and no concurrent submitting, so runs don't collide on the shared test accounts.</result>
+<usage><subagent_tokens>61155</subagent_tokens><tool_uses>5</tool_uses><duration_ms>41554</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a07df1242707d1922</task-id>
+<tool-use-id>toolu_01RdkENACdYm35SdGctgoZnq</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-simon-hackathon/5f1637bc-638d-4840-ae91-ddc7935d9a08/tasks/a07df1242707d1922.output</output-file>
+<status>completed</status>
+<summary>Agent "Summarize thread 1b019342" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I read the whole transcript: all user and assistant messages, plus a skim of the reasoning. It is thread 1b019342, an overseer/research thread that ran from 01:48 to 05:56 UTC.
+
+**1) What the thread did and what it measured**
+
+It started by checking whether the worker threads followed the user's steering. Thread 6d173657 ("hackathon-af", `lab/`) mostly did, with two caveats: it read "do not submit" narrowly (the user then confirmed that reading was correct), and it handed its subagents detailed designs despite "let him wander". Thread f837200d ("hackathon-5b", `explore/`) had a lock bug: `explore/run.py` locked `explore/.lock`, not `lab/.lock`, so its runs overlapped the lab thread's.
+
+It then ran its own A/B variants in `urltest/`. All were research-only runs on the user's OAuth login (no submitting), and every one scored 100:
+- u0, baseline: 220–358 s, about $1.77, 15–17 rejected `record` calls per run.
+- u1, a prompt line saying URL fetching is cheaper: 275–299 s, $1.62. No real effect, because Sonnet already navigates by URL and writes its own `fetch()` scripts.
+- u2, an in-browser fetch tool: 314–466 s, $1.98. Slower, dropped.
+- u3, a fix for a Claude Code bug: tool descriptions are cut at 16,384 characters, but the `record` schema was 21,454. Setting `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` cut rejections from about 15 to 1.
+- u4, a compact 8,700-character schema: $1.53, about 14% cheaper.
+- u5, batch page reads: 170 s, $1.22, but it read mail messages without passing their gates, so it is not fair-play-safe.
+- u6, "open one page of each kind in the browser first": 233–362 s, $1.31–1.83.
+- u7, all-Haiku: $0.17–0.19, but only 3 of 5 runs scored 100. One run scored 78.1 from a 1000× price error ("73,697" recorded as 73.697).
+- u8, which also checks numbers sent as strings: Sonnet 100 at 351 s, $1.47.
+
+Other numbers it reported:
+- **Explore p13g:** 190–265 s research, $1.58–1.79, 100 in 7 of 8 runs (the 8th was a harness bug).
+- **Lab a5:** the only full local run that scored 100 and got a signed receipt: 499 s (research 255 s, submit 235 s), $3.09.
+- **Lab submit alone:** a7 signed in 419 s for $0.49; another submit-only run signed in 289 s for $0.71.
+- **Sandbox:** 3 runs scored 100 in 14:15–17:44 for $2.39–4.53 (2 Opus, 1 Sonnet at 16:43 for $2.39). Sandbox runs are about 1.45× slower than local.
+
+There are no Atira run IDs in the transcript, only local temp folder names (`rfq-run-owv2gd7g`, `c4_7x2q1`, `pqbk1_4l`, …).
+
+**2) Best architecture**
+
+One Sonnet session per website, running in parallel and recording into one shared evidence store. Code then computes the bid. That is p13g, plus the description-length setting, the compact schema, the gate rule and the string number guard. Submitting would be the lab's form tools, rebuilt (see 3). The planned combination is `a10-p13submit`, which had no results yet.
+
+**3) Where the time goes, and how to cut it**
+- **Research:** the ERP worker is the critical path, at 217–486 s against 56–227 s for the other sites.
+- **Submit (a7, 419 s):** about 45 single-field `act` calls at about 5 s each take 0–230 s. Waiting for the TAN from a second session takes about 3 minutes. In a5, the session also expired mid-form at 164 s.
+- **On changed-looking sites the submit has never signed (0 of 8).** The TAN handoff loops and the final confirmation gets blocked. The estimated 1,240–1,290 s in the sandbox would exceed the 20-minute limit, though the lab's site-changing proxy inflates that figure.
+
+Speedup ideas:
+- Fill a whole form step per call: about 45 calls down to about 10, saving 2.5–3 minutes.
+- Use one submit session that reads the TAN from webmail already open and past its gates: 20–30 s instead of about 3 minutes.
+- Log in, pass gates and open the bid form during research: saves 30–40 s.
+- Split the ERP work across helper workers. p11 tried this and gave mixed results ($4.25, and one run at 85.25).
+
+The thread's target was about 5 minutes locally, roughly 7 in the sandbox.
+
+**4) How leaderboard competitors get so fast**
+
+The transcript never mentions ~38 s. It only says the leaders finish in 3:36, "probably with systems tuned to public-1". Matching that would need research under about 2 minutes. For comparison, the hardcoded-URL approaches were fast: fastread with Opus scored 100 in 135 s for $1.09, and DeepSeek scored 100 in 95–193 s for $0.05–0.08. Both are ruled out because they depend on public-1 URLs.
+
+**5) Fair-play and steering compliance**
+- **Rules:** the model must choose every URL. No hardcoded values or URLs, no fixed scripts, no "crawl then one-shot" designs, no fetching around gates.
+- **Gate risk:** Sonnet's own `fetch()` scripts read mail messages around their gates in 4 of 7 baseline runs, unprompted. The lab's agent fetched customer-portal documents before opening any in the browser. The fix is the gate rule plus an audit script, `urltest/gate_audit.py`, adapted as `lab/gate_audit.py`. The audit can't recognise a gate already passed on an overview page, so those cases need a manual look.
+- **Privacy:** a lab submit run put the user's Gmail address into a bid on the scouting tender portal. Fixed in a9, which takes the address from the webmail; the organizers could be asked to remove it.
+- **Load:** the threads agreed to at most 3 live runs at a time on the machine (this thread kept to 1). Research-only runs no longer take the lock; submit runs still do.
+- **Before submitting:** run the gate audit on the chosen package's local runs.
+
+Key paths: `/Users/simon/hackathon/urltest/` (including `compact-schema.patch` and `gate_audit.py`), `/Users/simon/hackathon/lab/agents/`, `/Users/simon/hackathon/explore/`.</result>
+<usage><subagent_tokens>51230</subagent_tokens><tool_uses>7</tool_uses><duration_ms>42811</duration_ms></usage>
+</task-notification>
+
+---
+
+any insights here:
+
+latency back up to 60-100s
+is it due to upgrades?
+Elia — gestern um 23:39 Uhr
+nah, incoming tho once home
+swaggpi [r6c],  — gestern um 23:40 Uhr
+Hi Atira team, Im facing a similar issue. We’re seeing requests through the sandbox model proxy hang without ever reaching the model, and we have per-request evidence.
+
+Symptom: in our test runs, roughly 7% of requests to OPENAI_BASE_URL (…/llm/run/<token>/openai/v1) never get a response. The request is fully sent, the TCP/TLS connection is fine, and then no response headers come back. Those requests are also missing from the run’s LLM call log: no entry, not even as failed or in flight.
+
+Evidence: run run_c1ec7542d4f89fe6, traced at the HTTP connection level with httpcore trace hooks:
+
+56 requests stalled at receive_response_headers after send_request_body.complete (we cut them off at 15 s for chat, 4 s for /v1/decisions).
+run_llm_calls for the same run shows 746 calls and only 4 failures, all 429s that returned immediately. None of the 56 stalled requests appear.
+Example: at 00:09.4 our 4 workers each sent one /responses request. Only 3 are logged (c_183625, c_183626, c_183628, all 200 in ~1.4 s). The 4th never shows up and timed out at 00:24.4 without response headers.
+/v1/decisions is hit hardest: 27 of 117 requests stalled (~23%), versus ~4–5% for /responses. 40 of the 56 stalls were on freshly opened connections.
+Same pattern in run_fbbc225418df69da (49 client timeouts, platform log says “Failures: none”) and run_fe6169a934516d1b.
+Calling OpenAI directly from our machines with the same payloads and concurrency: 120/120 fine, no stalls.
+
+Impact: up to 20 minutes of agents stalling over a run and slightly increased cost which leads to very bad scores since they are cost * time
+
+Could you check whether the proxy drops or holds some requests before logging/forwarding them (connection handling for new connections, or the /decisions route)? Happy to share full traces. Thanks!
+Elia — gestern um 23:41 Uhr
+fix incoming, sqlite is burning rn 
+Elia — 00:44
+part of the upgrade is up, 2nd part going up now -- runs will be paused for few min (those running rn will be restarted post-deploy)
+back up
+
+bunch of (v) hot paths are streamlined now for current scale - should fly now (everything a lot quicker, sqlite + a bunch of single-threaded node processes were drowning) :)
+that also resolves the rare annoying site timeouts under full load, occasional queueing, etc.
+
++ concurrent runs cap also increased once more 
+iiisak [650H],  — 01:28
+It seems to be somewhat better but I'm still experiencing some imho crazy lag spikes
+Bild
+qwen decode speed
+11 Nachrichten ›
+In diesem Thread gibt es keine aktuellen Nachrichten.
+Elia
+ hat einen Thread begonnen: qwen decode speed. Alle Threads anzeigen. — 01:40
+Elia — 02:07
+We're batching less now, i.e. Qwen decode TPS is ~2x on avg now - just getting started though, we'll make it a lot quicker :)
+Youssef — 02:08
+Are we going to get any insights about private test cases
+Elia — 02:10
+coming
+Elia — 02:47
+in fact a p powerful primitive coming that should help everybody validate generalization a lot easier ;)
+Youssef — 04:55
+Did the website crash?
+Elia — 04:56
+lgtm, lmk in case anything is off
+tuned speculative decoder does 230 TPS decode at p50 - rolling out now - at high load will land lower but good boost ^^
++ better cache-aware gpu routing, should reduce simulated cost and also push overall throughput / speed even further 
+iiisak [650H],  — 05:03
+when's this coming 👀
+Elia — 05:04
+eta is :30, pushing for quicker - quite a lot of things under the hood
+Youssef — 05:06
+Did the cost estimate increase?
+Elia — 05:08
+no - can expose cached reads / hit ratio in run ui if helps (main cost driver)
+new cluster with better routing is warming, cutover in few min - after that costs should be a lot leaner if you have stable prefixes 
+plug 🔌 — 05:31
+what's the current status on the primitive?
+Elia — 06:01
+rollout, runs might blip rq (re-enqueued as usual) 
+Elia — 06:33
+@everyone 
+
+Alright - primitive is up (finally, apologies) - Introducing Evals
+
+Evals allow you to deploy arbitrary sites and then do regular sandboxed runs on them (defined input, same output schema as rn and ground truth solution defined) - run/evaluate new code as usual or quickly benchmark your historic scored submissions* to see where generalization might've regressed.
+
+By default, evals are private (usable / accessible only by your team) - but you can also turn them public, letting other teams also practice on them - that way ideally a crowdsourced set of datasets emerges to give you all the final leap of not missing out on quality due to overfit parts.
+
+Re: our private dataset, majority of teams regressed on quality - there are outliers though that didn't - and for those that did regress it's often times small things causing leveraged impact.
+
+Upgrade your cli &/ reinstall mcp to let your coding agents set you up some evals.
+
+Concurrent runs per team are bumped to 12 concurrent in-flight Qwen calls to 64 -- make the servers bleed & lightspeed.
+For those that haven't read it, avg. e2e LLM response times are down 2.2x, decode is 2-3x quicker and cache-hit rate increased by 20% aggregate.
+
+in 10 min - same as giving runs custom names (to e.g. fire up a few branches)
+ 
+We'll keep monitoring the situation & lyk once the positive tendency re: private set kicks in ^^
+
+Opus tl;dr vid (meh but w/e): 
+
+Elia — 06:46
++ in case any team is out of tokens re: coding we can provide you with openrouter keys (to use w e.g. opencode) -> use muse-spark 1.3 contributor and you can spin up a whole fleet until noon -> shoot dm 
+Elia — 07:00
+naming runs (e.g. after branches or whatever) and triggering evals on historic submissions is live now as well -> needs another cli upgrade
+few PolyETHylen eval runs got killed during rollout of that, now re-enqueued 
+Elia — 07:32
+As a small motivator: both the public and eventual private leaderboard stay up indefinitely (potentially consolidated under an umbrella challenges site down the road), i.e. your greatness and sacrifices won't be forgotten. 
+Tizian — 08:02
+do you still have some openrouter keys? I ran out of OpenAI credits
+Youssef — 08:02
+Can we get any insights about  difference in our results between public and private datasets
+
+---
+
+<task-notification>
+<task-id>a0152aa0101844562</task-id>
+<tool-use-id>toolu_01XJNac4yR7B2nxnZ6sq9ngn</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-simon-hackathon/5f1637bc-638d-4840-ae91-ddc7935d9a08/tasks/a0152aa0101844562.output</output-file>
+<status>completed</status>
+<summary>Agent "Summarize thread 6d173657" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I read the whole transcript: every user and assistant message, plus targeted greps of the reasoning. One thing up front: it never discusses a ~38 s competitor time. The only leaderboard numbers it gives are leaders at **3:36 for $0.10**. The one "38 seconds" in the file is a log-timing glitch with nothing to do with the leaderboard.
+
+**1) Task and scoring**
+- The agent has to research an RFQ across four sites and then submit a signed bid:
+  - a tender portal (tender, Q&amp;A, bid configurator)
+  - a supplier portal (spec revisions)
+  - an ERP (materials, stock, prices)
+  - a webmail (approvals, TAN)
+- A bid means filling the configurator and signing with a TAN from the webmail, which is valid for 5 minutes.
+- The hard limit is 20 minutes per run. Sandbox runs take about 1.45× local time.
+- Winners are ranked on the private run first, then the public run, then elegance. Cost × time only breaks ties between runs at 100.
+- The private run uses different software, layout, navigation and data split, and the bid form can be any form.
+- Teams can opt into best-of-3 for the final run.
+- Ten teams already score 100 on public-1.
+
+**2) Best approach and results**
+- Proven in the sandbox, all with the `cc-agent` pipeline:
+  - `run_34c4f8a0`: Sonnet, 100, 16:43, $2.39 (Atira meter)
+  - `run_4cedcc2e`: Opus, 100, 14:15, $3.88
+  - `run_d6be3092`: Opus, 100, 17:44, $4.53
+- How `cc-agent` works:
+  - `claude -p` with Playwright MCP collects evidence (not conclusions) against the `evidence.py` schema.
+  - `resolver.py` and `pricing.py` do all the arithmetic.
+  - A second session submits.
+  - Every run that finished research got the same bid: 356,949.62 EUR.
+- Latest local design (`sonnet-agent` lab, variants a1–a10 plus a parallel session's p13):
+  - four parallel per-site Sonnet workers
+  - a `record` MCP store that validates as it goes (field-level merge, price conditions replaced whole, `{raw, format}` numbers, a 20× price-plausibility guard)
+  - `read`, `fetch_like` (learn a URL pattern by clicking once, then pull by URL, fall back to clicking if it fails) and `next_page`
+  - generic form tools: `look`, `act`, `sign` with a summary check, `drag_slider`
+  - `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH=40000`, `stdin=DEVNULL`, `--tools Read`
+- Local results:
+  - p13 research: 100 in 8 of 8 runs (original sites and mutated ones), 190–266 s, $1.58–2.03.
+  - a5 full run: 100 with a signed receipt, about 500 s, about $3.09.
+  - a10: research done in 241 s; its submit was still running when the transcript ends.
+  - On mutated ("combo") sites, research hit 100 every time (246–330 s), but signing failed: NO-CHANGE, a 400 on the POST, and repeated TAN cycles.
+
+**3) What failed and why**
+- Sandbox zeros were never wrong answers:
+  - `run_a6cb3475` timed out at 20:09: the submit went back to research for missing material attributes.
+  - OpenRouter 402 (key ran out of credit) on 5 runs, including `run_b07c575e`.
+  - `run_a982df71` hung on `browser_evaluate`, which had no timeout.
+  - `run_3db846d9` crashed on `json.loads("")`.
+- Qwen never got past 5 points. Thinking tokens pushed calls to 90–117 s, queue waits ate up to 10:54 of one run, and `run_027ddd6d` spent 7:55 waiting.
+- DeepSeek:
+  - prompting only: 52–85, because it misread number formats (64,853 became 64.853)
+  - code converting numbers plus gap rounds: 3/3 at 100 locally for $0.05–0.08 in 95–193 s, but only with public-1 URLs hardcoded
+  - htmlswarm: never produced a priced answer
+- Other designs that lost:
+  - Haiku workers: 98.7, slower
+  - steer and textdump: no bid
+  - lean snapshots: 590 s vs 396 s
+  - replaying learned click paths: worked 4/14
+  - whole-record `merge()`: wiped good evidence
+- A parallel mail session for the TAN handover was slow and fragile: 65–288 s, with request numbers that didn't line up.
+
+**4) Where the time goes**
+- In the Sonnet 100 run, research took 8:00, of which 7:19 was waiting on the model at about 4.4 s per call:
+  - auto-compaction at 166k tokens: 60 s, plus 45 s re-checking the ERP
+  - writing the final 14.5k-token evidence JSON: 69 s
+- That run's submit took 8:42:
+  - nine scripts each waited about 30 s for a page "load" that never fires (4:33 total)
+  - about 34 handwritten scripts, and survey popups
+- In the parallel design, the ERP worker is the critical path, because it needs the catalogue groups from the spec first. The other workers finish in 105–237 s.
+- Webmail gates (a slider per message) take about 20 calls.
+- Submit stays at 289–600 s. Full combo runs reach 840–890 s locally, which is over 20 minutes once scaled to the sandbox.
+- About 65% of the cost is cache reads: roughly 53k tokens per turn over 113 turns.
+
+**5) Competitor speed and open ideas**
+- The transcript reads the leaders' 3:36 / $0.10 as almost certainly tuned to public-1, and therefore likely to break on the private run. One reasoning note puts this team about 100× behind the leader on cost × time.
+- So the strategy is to bet on generality, not public speed.
+- Open speed-up ideas:
+  - a single submit session, with webmail gates passed during research
+  - `fetch_like` URL pulling, which saves model turns: 0.9 s per fetch vs 3.0 s per click replay, and all 156 ERP values in 78 s
+  - a smaller fixed prompt and tool schemas (a compact `record` description cut cost 14%)
+  - log into the ERP at t=0 and hand out catalogue groups from a queue
+  - helper tabs in the same browser
+  - Fable, Opus or Sonnet comparison; best-of-3; a partial-bid fallback
+- Measured targets: local median ≤ 9 min, every run ≤ 12 min.
+
+**6) Fair-play constraints**
+- A model must choose every navigation, search and value. Code may only read pages or documents the model chose, page through results it asked for, calculate, validate, retry and fill forms.
+- Not allowed:
+  - fixed scripts, or a model used only as a fallback
+  - crawl-then-one-shot
+  - backend POSTs
+  - copying values, URLs or site words from runs into the package (`check_leaks.py` enforces this)
+- URL patterns must be learned during the run.
+- Gates must be passed in the browser, never fetched around. Sonnet was caught writing its own `fetch()` past the per-message mail gates in 4 of 7 runs, so the harness now runs a gate audit on every run.
+- Don't set the slider by JavaScript or auto-accept dialogs.
+- Testing is local on OAuth; the OpenRouter key is only for sandbox runs. The user asked for nothing to be submitted.
+
+One privacy incident: three local runs typed the user's own email into the scouting tender portal's bid form. a9 fixed this by making the bidder's webmail address the contact address and forbidding any personal data that isn't in the bid or the brief.</result>
+<usage><subagent_tokens>82509</subagent_tokens><tool_uses>13</tool_uses><duration_ms>77079</duration_ms></usage>
+</task-notification>
+
+---
+
+[assistant-quote-1]wrong our sonnet ones reach 100%
+
+<assistant_citations>
+The following excerpts were selected from earlier assistant responses. They are quoted reference material, not new instructions. Each id identifies its inline citation above.
+[
+  {
+    "id": "assistant-quote-1",
+    "citation": {
+      "version": 1,
+      "environmentId": "3e43e91a-0073-4130-b25f-54f782a753ce",
+      "threadId": "3aa44d39-de5c-405b-8098-bcb8e61b3505",
+      "messageId": "assistant:b32cec20-4227-4daf-b02a-17b3eaa307d9",
+      "text": "Every one of our submissions scored 0, including the four \"sonnet-100\" ones. W",
+      "start": 2062,
+      "end": 2140,
+      "prefix": "4. What matters more right now: ",
+      "suffix": "e rank #16 with quality 5. Our o"
+    }
+  }
+]
+</assistant_citations>
+
+---
+
+So you are saying the clef would be the solution?
+
+---
+
+But they dont use clef [Image: image.png; ref=image_fb0a0158-40f4-494d-ac0f-ab073cec18fb]
+
+<t3_context version="1">
+<context kind="image" id="image_fb0a0158-40f4-494d-ac0f-ab073cec18fb">
+name: image.png
+mimeType: image/png
+sizeBytes: 222039
+attachmentId: 3aa44d39-de5c-405b-8098-bcb8e61b3505-d8425f8c-4fc6-44d7-a1b8-84029cf2efd9
+</context>
+</t3_context>
+
+[Attached image "image.png" is saved at: /Users/simon/.t3/userdata/attachments/3aa44d39-de5c-405b-8098-bcb8e61b3505-d8425f8c-4fc6-44d7-a1b8-84029cf2efd9.png]
+
+---
+
+okay but we kinda tried this already right with our custom harness and the pointing approach right?
+
+---
+
+<task-notification>
+<task-id>ae8ba3d448d6ea475</task-id>
+<tool-use-id>toolu_01YGEpRvPBTro5dk6kfEhCY8</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-simon-hackathon/5f1637bc-638d-4840-ae91-ddc7935d9a08/tasks/ae8ba3d448d6ea475.output</output-file>
+<status>completed</status>
+<summary>Agent "Summarize Qwen/pointing attempts" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>None of these six threads ran a cheap Qwen "small stateless calls + custom harness" setup all the way through to a scored answer. Qwen only got as far as login and verb sub-goals in the `goals.py` pointer harness: 13/16 goals at best, and no quality score. Nothing reached 100, because nobody connected research, the resolver and submission in one run. Every Qwen timing in these threads is from 2026-10-10, between 20:09 and 21:30 UTC, so all of it predates the 00:07–04:33 UTC speed-up. Transcript times are UTC; the assistant's "your time" is UTC+2.
+
+## 1. 6ba6e455 (pointing app)
+- **Architecture:** `orchestrated/point.py`, then `goals.py`. Code drives the browser. Each call is stateless: about 1K tokens in (a numbered element list plus the goal), about 50–64 out, thinking off. Code checks the finish condition; the model can't declare "done".
+- **Results:**
+  - Qwen in `point.py`, 20:09Z (`out/point-qwen-20261010-220908`): tender and supplier logins OK, ERP gate looped 12 calls, webmail failed.
+  - Qwen in `goals.py`, ~20:50Z: 4/4 logins, `read_qa` 28 s for $0.0009. 16 goals took 204 s, 109 calls, $0.020.
+  - Three-way parallel run, ~21:25Z, same `goals.py`:
+
+| | Qwen | Haiku 5.5 | DeepSeek |
+|---|---|---|---|
+| Correct goals | 13/16 | 14/16 | 10 |
+| Wall time | 277 s | 130 s | 205 s |
+| Model time per call | 4.7 s | 1.5 s | 3.3 s |
+| Calls | 101 | 112 | 123 |
+| Cost | $0.018 | $0.023 | $0.0044 |
+
+- **Failures:**
+  - The read-only guard blocked the "Verbindliche Unterlagen" checkbox, so every model failed `read_requirements`.
+  - `search_mail` paging read 2 of 3 pages with all three models.
+  - Condition bugs: revision name outside the checked title positions, the `GR-`/`HZ-` look-alike rule, and paging that clicked another list's "next".
+  - Qwen failed `list_revisions` and `read_message`, and was slowest per call.
+  - Noise: an internet drop around 21:00Z and runs sharing the same accounts.
+- **Not tried:** an end-to-end run with resolver and submit, an Atira sandbox run, repeated runs.
+
+## 2. 08dd4a6f (custom browser harness)
+- **Architecture:** `login_qwen.py` loops one tool call per turn. The prompt is about 300 tokens with 7 tools; each turn sends an `aria_snapshot` of up to 5K characters, older pages are cut to 300 characters, thinking is off. A screenshot fallback was proposed.
+- **Results:** the Qwen run (`out/login-qwen-20261010-213620`) never wrote a `results.json`, so there are no numbers. The thread then switched to Haiku in Claude Code learning verb click paths:
+  - code-verb: 12/13 verbs replayed, 200 s, $0.31
+  - code-site: 12/13, 428 s, $0.21
+  - mcp-site: 13/13, 384 s, $0.34
+- **Failures:** the ERP refuses broad searches without a Kataloggruppe, and mail counts drift while a run is going.
+- **Not tried:** Qwen on verbs, any full run.
+
+## 3. 7a540a56 (Qwen extraction cost)
+- **Analysis only, no new runs.** It cites Qwen run `run_935ad`, an earlier full agent: calls producing 7–8.5K output tokens took 3–4 minutes each (about 35 tok/s). The five slowest took about 17.5 minutes. Some calls looked duplicated by 60 s timeout retries. It also mentions a 12-minute queue wait in one run and a 22 s average per ERP call.
+- **Diagnosis:** model output was the cost, from thinking or from copying rows into `save_facts`. `llm_agent.py` didn't turn thinking off.
+- **Proposed:** model points, code extracts (`read_table`), or Clef. One Clef test answered in 0.8–2.5 s, 745 tokens, about $0.0002. Clef was never wired into anything.
+
+## 4. 9b88627c (Qwen and DeepSeek)
+- **Content:** re-analyses the three-way run (same numbers as thread 1, the 21:25Z run). Also covers the cost floor (cost counts as at least $0.01) and that `goals.py` needs no account isolation, since a second session on the same account doesn't log out the first (ERP included).
+- **Then Haiku only:** `paths_haiku.py`, where Haiku finds the entry point and code dumps the anchored neighbourhood.
+  - Tender 1 call, ERP material 3–4 calls, ERP search 6–7, mail 2–6.
+  - Spec document 0/2 (Haiku loops). Logins unreliable: mail failed 4 of 5.
+  - Q&amp;A captured only 2 of 6 pages (a depth bug). Mail dump took 300 s.
+- **Qwen:** none after 21:30Z.
+
+## 5. b119029a (DeepSeek click paths)
+- **Architecture:** `htmlswarm/swarm.py`. DeepSeek V4.1 Flash only, no Qwen. It sees each tab's whole cleaned HTML and returns one action; 4 browsers with any number of tabs and a shared notes board. An address book of learned URL patterns was added later. Each site's saved pages are then extracted into the evidence schema.
+- **Results** (23:10Z–00:16Z), no answer in any run:
+  - 510 s, $0.12
+  - 575 s, $0.34
+  - 627 s, $0.39, with 3.7M input tokens
+- **Failures:**
+  - The resolver always stopped on missing evidence. Last run: two Kataloggruppen never searched, one stock value missing, the Rüstpools mail not found, and a quantity mismatch on position 01.05.
+  - DeepSeek repeated the same blocked click 20 times and declared "done" too early.
+  - The condenser initially dropped canvas text.
+- **Not tried:** Qwen, a required-evidence check before a tab may stop.
+
+## 6. 435ea8b6 (cheap click-path pipeline)
+- **Architecture:** `erp_chain.py`, ERP only, no Qwen.
+  - Haiku logs in and finds the first search; code replays the other 4 groups.
+  - Opus (low reasoning) picks candidates; Haiku opens the first material.
+  - Code follows the anchored links and fetches 9 materials × 11–15 screens with `fetch()`; code also does the text cleanup.
+- **Results:** 156/156 values captured, 78 s, $0.029. Opus was $0.026 of that.
+- **Notes:**
+  - The Kataloggruppen were fed in from an earlier run's results, not found by the agent. That's a shortcut for the local test; it would break fair play in a package.
+  - DeepSeek as cleaner lost values (output truncated, inconsistent line drops).
+- **Not tried:** spec and mail chains, Evidence JSON into `resolver.py`, submit, Qwen.
+
+## Overall verdict
+1. A partial attempt exists: Qwen as a stateless pointer in `goals.py`, at about 1K tokens and 1 action per call. It was only tested on 16 sub-goals: best 13/16, 277 s, about $0.018. It never ran end to end, so it has no quality score.
+2. It fell short of 100 mainly because the harness was never finished, not because of the model. Causes: finish-condition bugs, the `verbindlich` block, incomplete mail paging, unreliable logins, no research→resolver→submit wiring, and no Atira sandbox run.
+3. Qwen-specific problems were slow calls (4.7 s each, versus 1.5 s for Haiku), the earlier ERP gate loop, and in older full-agent runs thinking/output-heavy 3–4 min calls and queue waits. All of these were measured before the 2026-10-11 00:07 UTC speed-up, so they may be stale.
+4. Never tried: Qwen on the "model picks the entry point, code dumps/fetches the neighbourhood" pattern that worked in `erp_chain.py` (78 s for all ERP data), Qwen as the orchestrator or picker in place of Opus, and Clef for the choice calls.
+5. The pieces add up to roughly the leaders' budget (logins plus a few entry points, then code dumps plus a resolver), but none of the threads put them together into one run.</result>
+<usage><subagent_tokens>124923</subagent_tokens><tool_uses>17</tool_uses><duration_ms>104295</duration_ms></usage>
+</task-notification>
+
+---
+
+nope
+
+---
+
+But our pointing approach werent even succesful on a small scale
+
+---
+
+/goal okay try as many things in parallel with haiku making that small decisions and see if you get something to work
+
+---
+
+<task-notification>
+<task-id>bthzhqkag</task-id>
+<tool-use-id>toolu_012jmymTLYsoKaWQGWT6GrCY</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-simon-hackathon/5f1637bc-638d-4840-ae91-ddc7935d9a08/tasks/bthzhqkag.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for v3 progress lines" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b2xg8sr50</task-id>
+<tool-use-id>toolu_015BA4MRdDLnfZBNs2L9MCD5</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-simon-hackathon/5f1637bc-638d-4840-ae91-ddc7935d9a08/tasks/b2xg8sr50.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for portal progress in v4" completed (exit code 0)</summary>
+</task-notification>

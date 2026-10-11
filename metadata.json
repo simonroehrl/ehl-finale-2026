@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4N7J3B4HG4A59R62NVMD986",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 191,
+  "checkpoints_count": 205,
   "files_touched": [
     "benchmark/.gitignore",
     "bid_engine/evidence.py",
@@ -39,20 +39,27 @@
       "compact_transcript": "/3/transcript.jsonl",
       "content_hash": "/3/content_hash.txt",
       "prompt": "/3/prompt.txt"
+    },
+    {
+      "metadata": "/4/metadata.json",
+      "transcript": "/4/full.jsonl",
+      "compact_transcript": "/4/transcript.jsonl",
+      "content_hash": "/4/content_hash.txt",
+      "prompt": "/4/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 2312,
-    "cache_creation_tokens": 1828491,
-    "cache_read_tokens": 304248926,
-    "output_tokens": 783752,
-    "api_call_count": 1070,
+    "input_tokens": 2516,
+    "cache_creation_tokens": 2056485,
+    "cache_read_tokens": 318581790,
+    "output_tokens": 846684,
+    "api_call_count": 1166,
     "subagent_tokens": {
-      "input_tokens": 88,
-      "cache_creation_tokens": 584516,
-      "cache_read_tokens": 9364558,
-      "output_tokens": 27328,
-      "api_call_count": 44
+      "input_tokens": 174,
+      "cache_creation_tokens": 885224,
+      "cache_read_tokens": 11392117,
+      "output_tokens": 46447,
+      "api_call_count": 87
     }
   }
 }

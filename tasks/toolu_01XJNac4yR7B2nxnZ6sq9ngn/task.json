@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01XJNac4yR7B2nxnZ6sq9ngn",
+  "agent_id": "a0152aa0101844562",
+  "subagent_type": "Explore",
+  "task_description": "Summarize thread 6d173657",
+  "token_usage": {
+    "input_tokens": 28,
+    "cache_creation_tokens": 79755,
+    "cache_read_tokens": 599551,
+    "output_tokens": 3113,
+    "api_call_count": 14
+  },
+  "started_at": "2026-10-11T08:03:51.133557+02:00",
+  "completed_at": "2026-10-11T08:05:08.148195+02:00"
+}

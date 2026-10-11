@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01YGEpRvPBTro5dk6kfEhCY8",
+  "agent_id": "ae8ba3d448d6ea475",
+  "subagent_type": "Explore",
+  "task_description": "Summarize Qwen/pointing attempts",
+  "token_usage": {
+    "input_tokens": 34,
+    "cache_creation_tokens": 121703,
+    "cache_read_tokens": 1139721,
+    "output_tokens": 3447,
+    "api_call_count": 17
+  },
+  "started_at": "2026-10-11T08:10:13.970936+02:00",
+  "completed_at": "2026-10-11T08:11:58.205483+02:00"
+}
