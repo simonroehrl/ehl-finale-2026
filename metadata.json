@@ -3,8 +3,9 @@
   "checkpoint_id": "01M4N7J3B4HG4A59R62NVMD986",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 88,
+  "checkpoints_count": 132,
   "files_touched": [
+    "benchmark/.gitignore",
     "bid_engine/evidence.py",
     "bid_engine/resolver.py",
     "bid_engine/tests/test_resolver.py",
@@ -17,13 +18,20 @@
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
       "prompt": "/0/prompt.txt"
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
+      "prompt": "/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 764,
-    "cache_creation_tokens": 571284,
-    "cache_read_tokens": 93624991,
-    "output_tokens": 228483,
-    "api_call_count": 334
+    "input_tokens": 1632,
+    "cache_creation_tokens": 1275561,
+    "cache_read_tokens": 246408138,
+    "output_tokens": 585262,
+    "api_call_count": 768
   }
 }

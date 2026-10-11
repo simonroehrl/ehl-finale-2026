@@ -1,0 +1,767 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4N7J3B4HG4A59R62NVMD986",
+  "session_id": "38c06511-1e16-41c4-a1ad-ee59930af2d1",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T10:19:00.702133Z",
+  "branch": "main",
+  "checkpoints_count": 44,
+  "save_step_count": 31,
+  "files_touched": [
+    "benchmark/.gitignore",
+    "bid_engine/evidence.py",
+    "bid_engine/resolver.py",
+    "bid_engine/tests/test_resolver.py",
+    "cc-agent/main.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "2cac77ccc9b1",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 868,
+    "cache_creation_tokens": 704277,
+    "cache_read_tokens": 152783147,
+    "output_tokens": 356779,
+    "api_call_count": 434
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "prompt-skill-claude-code-goal-2026-10-10T12:05:00.970134Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "goal"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "8bed33e935ff",
+      "timestamp": "2026-10-10T12:05:00.970134Z",
+      "native": {
+        "command": "/goal"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/goal",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 101
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T10:19:00.560861Z",
+    "agent_lines": 0,
+    "agent_removed": 31,
+    "human_added": 2079,
+    "human_modified": 1551,
+    "human_removed": 0,
+    "total_committed": 2229,
+    "total_lines_changed": 12714,
+    "agent_percentage": 0.24382570394840333,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 668,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 699,
+      "agent_lines_removed": 8
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 51,
+      "user_lines_removed": 7,
+      "agent_lines_added": 792,
+      "agent_lines_removed": 38,
+      "user_added_per_file": {
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 51,
+      "user_lines_removed": 7,
+      "agent_lines_added": 792,
+      "agent_lines_removed": 38,
+      "user_added_per_file": {
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 163,
+      "user_lines_removed": 18,
+      "agent_lines_added": 2483,
+      "agent_lines_removed": 39,
+      "user_added_per_file": {
+        "orch-agent/package-lock.json": 2,
+        "orch-agent/store_server.py": 110,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/package-lock.json": 2,
+        "orch-agent/store_server.py": 9,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 7,
+      "user_lines_added": 986,
+      "user_lines_removed": 28,
+      "agent_lines_added": 2935,
+      "agent_lines_removed": 39,
+      "user_added_per_file": {
+        "bid_engine/evidence.py": 2,
+        "bid_engine/tests/test_resolver.py": 4,
+        "orch-agent/agent.json": 6,
+        "orch-agent/evidence.py": 2,
+        "orch-agent/main.py": 1,
+        "orch-agent/package-lock.json": 2,
+        "orch-agent/store_server.py": 111,
+        "orch-agent/uv.lock": 807,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "bid_engine/evidence.py": 2,
+        "bid_engine/tests/test_resolver.py": 4,
+        "orch-agent/evidence.py": 2,
+        "orch-agent/main.py": 1,
+        "orch-agent/package-lock.json": 2,
+        "orch-agent/store_server.py": 10,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 8,
+      "user_lines_added": 51,
+      "user_lines_removed": 7,
+      "agent_lines_added": 3897,
+      "agent_lines_removed": 39,
+      "user_added_per_file": {
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 9,
+      "user_lines_added": 79,
+      "user_lines_removed": 10,
+      "agent_lines_added": 3897,
+      "agent_lines_removed": 39,
+      "user_added_per_file": {
+        "bid_engine/evidence.py": 15,
+        "bid_engine/tests/test_resolver.py": 13,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "bid_engine/evidence.py": 3,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 10,
+      "user_lines_added": 73,
+      "user_lines_removed": 15,
+      "agent_lines_added": 3938,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 2,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 2,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 11,
+      "user_lines_added": 94,
+      "user_lines_removed": 20,
+      "agent_lines_added": 3938,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 18,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 12,
+      "user_lines_added": 94,
+      "user_lines_removed": 20,
+      "agent_lines_added": 3938,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 18,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 13,
+      "user_lines_added": 94,
+      "user_lines_removed": 20,
+      "agent_lines_added": 3938,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 18,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 14,
+      "user_lines_added": 94,
+      "user_lines_removed": 20,
+      "agent_lines_added": 3938,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 18,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 15,
+      "user_lines_added": 94,
+      "user_lines_removed": 20,
+      "agent_lines_added": 3938,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 18,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 16,
+      "user_lines_added": 94,
+      "user_lines_removed": 20,
+      "agent_lines_added": 3938,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 18,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 17,
+      "user_lines_added": 94,
+      "user_lines_removed": 20,
+      "agent_lines_added": 3938,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 18,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 18,
+      "user_lines_added": 94,
+      "user_lines_removed": 20,
+      "agent_lines_added": 4209,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 18,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 19,
+      "user_lines_added": 94,
+      "user_lines_removed": 20,
+      "agent_lines_added": 4209,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 18,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 20,
+      "user_lines_added": 121,
+      "user_lines_removed": 20,
+      "agent_lines_added": 4599,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 45,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 21,
+      "user_lines_added": 121,
+      "user_lines_removed": 20,
+      "agent_lines_added": 4599,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 45,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 22,
+      "user_lines_added": 121,
+      "user_lines_removed": 20,
+      "agent_lines_added": 4599,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 45,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 23,
+      "user_lines_added": 121,
+      "user_lines_removed": 20,
+      "agent_lines_added": 4599,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 45,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 24,
+      "user_lines_added": 121,
+      "user_lines_removed": 20,
+      "agent_lines_added": 4599,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 45,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 25,
+      "user_lines_added": 121,
+      "user_lines_removed": 20,
+      "agent_lines_added": 4599,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 45,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 26,
+      "user_lines_added": 121,
+      "user_lines_removed": 20,
+      "agent_lines_added": 4599,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 45,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 27,
+      "user_lines_added": 121,
+      "user_lines_removed": 20,
+      "agent_lines_added": 4599,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 45,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 28,
+      "user_lines_added": 133,
+      "user_lines_removed": 23,
+      "agent_lines_added": 7151,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 45,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45,
+        "sched-agent/agent.json": 6,
+        "sched-agent/main.py": 6
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4,
+        "sched-agent/main.py": 3
+      }
+    },
+    {
+      "checkpoint_number": 29,
+      "user_lines_added": 196,
+      "user_lines_removed": 116,
+      "agent_lines_added": 7151,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 45,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45,
+        "sched-agent/agent.json": 6,
+        "sched-agent/main.py": 69
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4,
+        "sched-agent/main.py": 96
+      }
+    },
+    {
+      "checkpoint_number": 30,
+      "user_lines_added": 204,
+      "user_lines_removed": 118,
+      "agent_lines_added": 7151,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 45,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45,
+        "sched-agent/agent.json": 6,
+        "sched-agent/main.py": 77
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4,
+        "sched-agent/main.py": 98
+      }
+    },
+    {
+      "checkpoint_number": 31,
+      "user_lines_added": 204,
+      "user_lines_removed": 118,
+      "agent_lines_added": 7151,
+      "agent_lines_removed": 40,
+      "user_added_per_file": {
+        "orch-agent/evidence.py": 15,
+        "orch-agent/main.py": 45,
+        "orch-agent/store_server.py": 5,
+        "orchestrated/e2e_local.py": 5,
+        "orchestrated/erp_tabs_test.py": 3,
+        "orchestrated/orchestrate.py": 3,
+        "orchestrated/store_server.py": 45,
+        "sched-agent/agent.json": 6,
+        "sched-agent/main.py": 77
+      },
+      "user_removed_per_file": {
+        "orch-agent/evidence.py": 3,
+        "orch-agent/main.py": 6,
+        "orch-agent/store_server.py": 3,
+        "orchestrated/e2e_local.py": 1,
+        "orchestrated/erp_tabs_test.py": 1,
+        "orchestrated/orchestrate.py": 2,
+        "orchestrated/store_server.py": 4,
+        "sched-agent/main.py": 98
+      }
+    }
+  ]
+}
